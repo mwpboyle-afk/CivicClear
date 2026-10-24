@@ -81,6 +81,20 @@ the committed [`.kiro/`](./.kiro) directory: steering docs, the feature spec
   are stored in your browser (localStorage) — they persist on that device but
   aren't shared across devices or users.
 
+## Sample data & credits
+
+The bundled sample budgets are public municipal records published by their
+respective Massachusetts towns, included only as demo input. CivicClear claims
+no ownership of these documents.
+
+- **Town of Hadley, MA** — FY25 Town Administrator's Budget
+- **Town of Winchester, MA** — FY27 Budget Book
+- Town Operating Budget — Schedule III
+
+<!-- If you have the source URLs, add them here, e.g.
+  - Town of Hadley, MA — FY25 Budget: <url>
+-->
+
 ## License
 
 MIT
