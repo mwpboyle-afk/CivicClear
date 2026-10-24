@@ -1,15 +1,17 @@
 import type { BudgetData } from "@/lib/budget-schema";
 import { formatCurrency, formatCurrencyExact } from "@/lib/format";
-
-function largestDepartment(budget: BudgetData): { name: string; amount: number } | null {
-  const pool = budget.departments.length > 0 ? budget.departments : budget.categories;
-  if (pool.length === 0) return null;
-  return pool.reduce((max, d) => (d.amount > max.amount ? d : max));
-}
+import { selectBreakdown, largestItem } from "@/lib/budget-insights";
 
 export default function KpiCards({ budget }: { budget: BudgetData }) {
-  const largest = largestDepartment(budget);
-  const deptCount = budget.departments.length || budget.categories.length;
+  const breakdown = selectBreakdown(budget);
+  const largest = largestItem(breakdown);
+  const count = breakdown.items.length;
+  // Capitalize the breakdown label for the card title.
+  const titleNoun =
+    breakdown.label.charAt(0).toUpperCase() + breakdown.label.slice(1);
+  const pluralTitle =
+    breakdown.labelPlural.charAt(0).toUpperCase() +
+    breakdown.labelPlural.slice(1);
 
   const cards = [
     {
@@ -18,14 +20,14 @@ export default function KpiCards({ budget }: { budget: BudgetData }) {
       detail: formatCurrencyExact(budget.totalBudget),
     },
     {
-      label: "Largest Department",
+      label: `Largest ${titleNoun}`,
       value: largest ? largest.name : "—",
       detail: largest ? formatCurrencyExact(largest.amount) : "No data",
     },
     {
-      label: "Departments Tracked",
-      value: String(deptCount),
-      detail: `${deptCount} line item${deptCount === 1 ? "" : "s"}`,
+      label: `${pluralTitle} Tracked`,
+      value: String(count),
+      detail: `${count} line item${count === 1 ? "" : "s"}`,
     },
   ];
 

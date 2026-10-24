@@ -16,12 +16,22 @@ vi.mock("recharts", async () => {
 import CategoryPie from "./CategoryPie";
 import RevenueVsExpense from "./RevenueVsExpense";
 import YearOverYear from "./YearOverYear";
-import { sampleBudget, singleYearBudget } from "@/lib/__fixtures__/budget";
+import {
+  sampleBudget,
+  singleYearBudget,
+  categoryHeavyBudget,
+} from "@/lib/__fixtures__/budget";
 
 describe("CategoryPie", () => {
   it("renders a spending breakdown title with data", () => {
     render(<CategoryPie budget={sampleBudget} />);
-    expect(screen.getByText(/Spending by/i)).toBeInTheDocument();
+    // 4 departments >= 3 categories -> labeled by department.
+    expect(screen.getByText(/Spending by department/i)).toBeInTheDocument();
+  });
+
+  it("labels the chart by category when categories outnumber departments", () => {
+    render(<CategoryPie budget={categoryHeavyBudget} />);
+    expect(screen.getByText(/Spending by category/i)).toBeInTheDocument();
   });
 
   it("shows an empty state when there is no breakdown", () => {

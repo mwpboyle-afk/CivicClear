@@ -34,3 +34,23 @@ export const singleYearBudget: BudgetData = {
   ...sampleBudget,
   yearOverYear: undefined,
 };
+
+/**
+ * A budget where categories outnumber departments (the inverse of the typical
+ * case). Used to verify the KPI cards and the pie chart agree on which
+ * breakdown to show.
+ */
+export const categoryHeavyBudget: BudgetData = {
+  ...sampleBudget,
+  departments: [
+    { name: "General Government", amount: 40_000_000 },
+    { name: "Enterprise", amount: 55_000_000 },
+  ],
+  categories: [
+    { name: "Personnel", amount: 45_000_000 },
+    { name: "Operating", amount: 20_000_000 },
+    { name: "Capital", amount: 15_000_000 },
+    { name: "Debt Service", amount: 10_000_000 },
+    { name: "Benefits", amount: 5_000_000 },
+  ],
+};

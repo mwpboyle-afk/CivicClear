@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import type { BudgetData } from "@/lib/budget-schema";
 import { formatCurrencyExact } from "@/lib/format";
+import { selectBreakdown } from "@/lib/budget-insights";
 
 // High-contrast, color-blind-friendly palette.
 const COLORS = [
@@ -26,11 +27,8 @@ const COLORS = [
 ];
 
 export default function CategoryPie({ budget }: { budget: BudgetData }) {
-  // Prefer categories; fall back to departments.
-  const source =
-    budget.categories.length > 0 ? budget.categories : budget.departments;
-  const label =
-    budget.categories.length > 0 ? "category" : "department";
+  // Use the same breakdown as the KPI cards so the counts always agree.
+  const { items: source, label } = selectBreakdown(budget);
 
   if (source.length === 0) {
     return (
