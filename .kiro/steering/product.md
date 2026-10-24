@@ -1,9 +1,9 @@
-# Product Vision — CivicLens
+# Product Vision — CivicClear
 
 ## What it is
-CivicLens is a web app that makes municipal budgets understandable to ordinary
+CivicClear is a web app that makes municipal budgets understandable to ordinary
 residents. Local governments publish their budgets as long, dense PDFs that few
-people can realistically read. CivicLens turns one of those PDFs into something
+people can realistically read. CivicClear turns one of those PDFs into something
 a resident can actually use:
 
 1. **Upload** a municipal budget PDF (or try a bundled sample, picked at random).

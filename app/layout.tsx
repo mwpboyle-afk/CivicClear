@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CivicLens — Municipal Budget Explorer",
+  title: "CivicClear — Municipal Budget Explorer",
   description:
     "Upload a local government budget PDF, explore it through visualizations, and ask plain-English questions grounded in the document.",
 };

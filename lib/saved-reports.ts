@@ -17,7 +17,7 @@ export type SavedReport = {
   sections: PinnedSection[];
 };
 
-const STORAGE_KEY = "civiclens.savedReports";
+const STORAGE_KEY = "civicclear.savedReports";
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && !!window.localStorage;

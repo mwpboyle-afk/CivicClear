@@ -1,4 +1,4 @@
-# Tech Stack & Conventions — CivicLens
+# Tech Stack & Conventions — CivicClear
 
 ## Stack
 - **Framework:** Next.js 14 (App Router) with TypeScript.

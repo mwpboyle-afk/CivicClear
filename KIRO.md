@@ -1,6 +1,6 @@
-# How we used Kiro to build CivicLens
+# How we used Kiro to build CivicClear
 
-CivicLens was built in the **Kiro IDE** using a **spec-driven** workflow, backed
+CivicClear was built in the **Kiro IDE** using a **spec-driven** workflow, backed
 by **steering docs** and **agent hooks**. Everything referenced here is
 committed under [`.kiro/`](./.kiro).
 

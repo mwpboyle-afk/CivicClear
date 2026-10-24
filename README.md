@@ -1,11 +1,11 @@
-# CivicLens — Municipal Budget Explorer
+# CivicClear — Municipal Budget Explorer
 
 **Hackachusetts track: Civic Services**
 
 **Live demo: https://sundai-hack.vercel.app**
 
 Municipal budgets are published as long, dense PDFs that most residents can't
-realistically read. **CivicLens** turns a budget PDF into something a resident
+realistically read. **CivicClear** turns a budget PDF into something a resident
 can actually use:
 
 1. **Upload** a municipal budget PDF (or try a bundled sample).

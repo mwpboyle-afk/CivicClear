@@ -62,7 +62,7 @@ describe("saved-reports (localStorage)", () => {
   });
 
   it("tolerates corrupt storage", () => {
-    window.localStorage.setItem("civiclens.savedReports", "{not json");
+    window.localStorage.setItem("civicclear.savedReports", "{not json");
     expect(loadReports()).toEqual([]);
   });
 

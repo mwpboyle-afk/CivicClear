@@ -1,4 +1,4 @@
-# Project Structure — CivicLens
+# Project Structure — CivicClear
 
 ```
 .

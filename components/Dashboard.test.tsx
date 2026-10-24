@@ -50,7 +50,7 @@ describe("Dashboard", () => {
     render(<Dashboard budget={sampleBudget} text="raw" onReset={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Save report/i }));
     expect(screen.getByText(/Saved to this browser/i)).toBeInTheDocument();
-    const stored = window.localStorage.getItem("civiclens.savedReports");
+    const stored = window.localStorage.getItem("civicclear.savedReports");
     expect(stored).toBeTruthy();
     expect(JSON.parse(stored!)).toHaveLength(1);
   });

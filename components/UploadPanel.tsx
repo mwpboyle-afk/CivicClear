@@ -36,7 +36,7 @@ export default function UploadPanel({
     >
       <div className="text-center">
         <h1 className="text-5xl font-bold tracking-tight text-brand-dark">
-          CivicLens
+          CivicClear
         </h1>
         <p className="mt-3 text-lg text-slate-600">
           Understand your local government&apos;s budget. Upload the plan,
@@ -124,7 +124,7 @@ export default function UploadPanel({
       )}
 
       <p className="mt-8 max-w-md text-center text-xs text-slate-400">
-        CivicLens reads both text-based and scanned/image PDFs (scanned
+        CivicClear reads both text-based and scanned/image PDFs (scanned
         documents take a little longer). Your document is analyzed for this
         session only and is not stored.
       </p>

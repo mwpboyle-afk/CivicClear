@@ -1,8 +1,8 @@
-# Requirements — CivicLens Budget Explorer
+# Requirements — CivicClear Budget Explorer
 
 ## Introduction
 Municipal budgets are published as long, dense PDFs that most residents cannot
-realistically parse. CivicLens lets a resident upload a local government budget
+realistically parse. CivicClear lets a resident upload a local government budget
 PDF, explore it through visualizations, and ask plain-English questions
 answered from the document itself. Target track: Civic Services (Hackachusetts).
 

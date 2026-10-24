@@ -1,4 +1,4 @@
-# Tasks — CivicLens Budget Explorer
+# Tasks — CivicClear Budget Explorer
 
 - [x] 1. Scaffold the Next.js app and commit the `.kiro/` foundation
   - TypeScript Next.js (App Router), Tailwind, Vitest, ESLint

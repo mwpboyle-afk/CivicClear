@@ -1,4 +1,4 @@
-# Design — CivicLens Budget Explorer
+# Design — CivicClear Budget Explorer
 
 ## Overview
 A single Next.js (App Router, TypeScript) app deployed to Vercel. Two API
