@@ -42,6 +42,7 @@ export default function ChatPanel({
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [askedCount, setAskedCount] = useState(0);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
 
   const atLimit = askedCount >= MAX_QUESTIONS;
@@ -65,6 +66,7 @@ export default function ChatPanel({
     setInput("");
     setLoading(true);
     setAskedCount((n) => n + 1);
+    setShowSuggestions(false); // collapse once a conversation starts
     try {
       const res = await fetch("/api/ask", {
         method: "POST",
@@ -101,7 +103,7 @@ export default function ChatPanel({
   const inputDisabled = loading || atLimit;
 
   return (
-    <div className="flex h-[70vh] max-h-[640px] min-h-[420px] flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex h-[80vh] max-h-[760px] min-h-[460px] flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 p-4">
         <h3 className="text-base font-semibold text-slate-700">
           Ask about this budget
@@ -174,19 +176,28 @@ export default function ChatPanel({
 
       {!atLimit && remainingSuggestions.length > 0 && (
         <div className="border-t border-slate-100 px-4 pt-3">
-          <p className="mb-2 text-xs font-medium text-slate-400">Try asking:</p>
-          <div className="flex flex-wrap gap-2">
-            {remainingSuggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => ask(s)}
-                disabled={loading || cooldown}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-brand hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => setShowSuggestions((v) => !v)}
+            aria-expanded={showSuggestions}
+            className="mb-2 flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-600"
+          >
+            <span>{showSuggestions ? "▾" : "▸"}</span>
+            Suggestions
+          </button>
+          {showSuggestions && (
+            <div className="flex flex-wrap gap-2 pb-1">
+              {remainingSuggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => ask(s)}
+                  disabled={loading || cooldown}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-brand hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

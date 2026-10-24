@@ -23,7 +23,35 @@ describe("ChatPanel", () => {
         pinnedIds={emptyPinned}
       />,
     );
-    expect(screen.getByText(/Try asking:/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Suggestions/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /What is the total budget\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("collapses and expands the suggestions", () => {
+    render(
+      <ChatPanel
+        budget={sampleBudget}
+        text="raw"
+        onPin={noop}
+        pinnedIds={emptyPinned}
+      />,
+    );
+    const toggle = screen.getByRole("button", { name: /Suggestions/i });
+    // Starts open.
+    expect(
+      screen.getByRole("button", { name: /What is the total budget\?/i }),
+    ).toBeInTheDocument();
+    // Collapse hides the chips.
+    fireEvent.click(toggle);
+    expect(
+      screen.queryByRole("button", { name: /What is the total budget\?/i }),
+    ).not.toBeInTheDocument();
+    // Expand shows them again.
+    fireEvent.click(toggle);
     expect(
       screen.getByRole("button", { name: /What is the total budget\?/i }),
     ).toBeInTheDocument();
