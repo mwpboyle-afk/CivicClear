@@ -1,16 +1,16 @@
 {
   "samples": [
     {
+      "file": "hadley-fy25-budget.pdf",
+      "label": "Town of Hadley, MA — FY25 Town Administrator's Budget"
+    },
+    {
+      "file": "winchester-fy27-budget.pdf",
+      "label": "Town of Winchester, MA — FY27 Budget Book"
+    },
+    {
       "file": "town-operating-budget-schedule-iii.pdf",
       "label": "Town Operating Budget — Schedule III"
-    },
-    {
-      "file": "fy27-budget-document.pdf",
-      "label": "FY27 Budget Document"
-    },
-    {
-      "file": "budget-book-fy26.pdf",
-      "label": "FY26 Budget Book"
     }
   ]
 }
