@@ -1,8 +1,8 @@
 # Sample budgets
 
-The "Try a sample budget" button on the home page picks one of these PDFs at
-random and runs it through the normal analysis flow. This shows the app works
-across different municipalities, not just one hardcoded document.
+The home screen lists these PDFs as sample buttons; picking one runs it through
+the normal analysis flow. Offering several towns shows the app works across
+different municipalities, not just one hardcoded document.
 
 ## How to add a sample
 
@@ -20,12 +20,13 @@ across different municipalities, not just one hardcoded document.
    ```
 
    - `file` — the exact filename in this folder.
-   - `label` — shown to the user after a random pick (so they know which budget
-     loaded).
+   - `label` — the button text shown on the home screen.
 
 3. Commit both the PDF and the updated `manifest.json`.
 
 Notes:
-- Only text-based PDFs work (scanned/image-only PDFs can't be read).
-- If `manifest.json` is empty or missing, the sample button is hidden and users
-  can still upload their own PDF.
+- Text-based PDFs analyze best; scanned/image PDFs fall back to Gemini vision.
+- Mid-size budgets (roughly under ~120 pages) are analyzed in full; very large
+  PDFs are analyzed up to a character cap.
+- If `manifest.json` is empty or missing, the sample buttons are hidden and
+  users can still upload their own PDF.

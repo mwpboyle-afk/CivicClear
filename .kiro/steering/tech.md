@@ -27,8 +27,9 @@
   `BudgetData` JSON) → Zod-validated response.
 - `POST /api/ask`: question + budget context (structured JSON + extracted text)
   → Gemini grounded answer.
-- Client holds the analyzed budget in React state / sessionStorage for the
-  session. No persistence.
+- Client holds the analyzed budget in React state for the session. Reports the
+  user chooses to save are persisted in the browser via localStorage (no
+  backend); they are device-local.
 
 ## LLM conventions
 - Force JSON from Gemini with

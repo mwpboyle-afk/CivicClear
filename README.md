@@ -8,10 +8,12 @@ Municipal budgets are published as long, dense PDFs that most residents can't
 realistically read. **CivicClear** turns a budget PDF into something a resident
 can actually use:
 
-1. **Upload** a municipal budget PDF (or try a bundled sample).
+1. **Upload** a municipal budget PDF (or pick a bundled sample town).
 2. **Explore** it through visualizations — KPI cards, a spending pie chart,
    revenue vs. expenditure, and a year-over-year trend.
 3. **Ask** plain-English questions and get answers grounded in the document.
+4. **Build a report** — pin any answer as a section, add your own notes/lists,
+   rename and reorder sections, then save it or export the whole thing to PDF.
 
 ## How it works
 
@@ -26,10 +28,22 @@ Upload PDF ──► /api/analyze ──► pdfjs-dist (PDF → text)
 Ask a question ──► /api/ask ──► Gemini (answer grounded in the budget context)
 ```
 
+## Features
+
+- **Automatic analysis** of an uploaded budget PDF into a visual dashboard
+  (KPIs, spending pie, revenue vs. expenditure, year-over-year).
+- **Grounded Q&A** — ask about the budget and get answers drawn only from the
+  document (it says so when the answer isn't there).
+- **Report builder** — pin any chat answer as a section, add custom
+  notes/lists, rename and drag-to-reorder sections, and edit the report title.
+- **Save & reopen** reports (stored in your browser) and **export to PDF**.
+- **Scanned PDFs** supported via a Gemini vision fallback when there's no text
+  layer.
+
 ## Tech stack
 
 Next.js 14 (App Router, TypeScript), Google Gemini, pdfjs-dist, Zod, Recharts,
-Tailwind CSS, Vitest. Deployed on Vercel.
+Tailwind CSS, @dnd-kit, Vitest. Deployed on Vercel.
 
 ## Run it locally
 
@@ -41,7 +55,7 @@ cp .env.example .env.local        # add your GEMINI_API_KEY to .env.local
 npm run dev                       # http://localhost:3000
 ```
 
-Then upload a municipal budget PDF, or click **Try a sample budget**.
+Then upload a municipal budget PDF, or pick one of the bundled sample towns.
 
 ```bash
 npm test                          # run the test suite
@@ -60,8 +74,9 @@ the committed [`.kiro/`](./.kiro) directory: steering docs, the feature spec
 - For very large budgets (hundreds of pages), the dashboard focuses on the
   summary and overview sections; the chat can answer questions about details
   found deeper in the document. Small-to-mid-size budgets are analyzed in full.
-- Hackathon prototype: single session, no accounts, no persistence. Built as a
-  proof of concept, not a production tool.
+- Hackathon prototype, built as a proof of concept (no accounts). Saved reports
+  are stored in your browser (localStorage) — they persist on that device but
+  aren't shared across devices or users.
 
 ## License
 
