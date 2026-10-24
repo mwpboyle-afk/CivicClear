@@ -4,6 +4,19 @@ The home screen lists these PDFs as sample buttons; picking one runs it through
 the normal analysis flow. Offering several towns shows the app works across
 different municipalities, not just one hardcoded document.
 
+## Sources & attribution
+
+The bundled samples are **public municipal budget records** published by their
+respective Massachusetts towns for residents:
+
+- `hadley-fy25-budget.pdf` — Town of Hadley, MA, FY25 Town Administrator's Budget
+- `winchester-fy27-budget.pdf` — Town of Winchester, MA, FY27 Budget Book
+- `town-operating-budget-schedule-iii.pdf` — a town operating-budget schedule
+
+They are included solely as sample input to demonstrate the tool, and remain the
+work of the originating municipalities. CivicClear claims no ownership of these
+documents.
+
 ## How to add a sample
 
 1. Drop a **text-based** municipal budget PDF in this folder, e.g.
