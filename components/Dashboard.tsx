@@ -8,6 +8,7 @@ import YearOverYear from "./YearOverYear";
 import ExtendedSummary from "./ExtendedSummary";
 import TaxImpact from "./TaxImpact";
 import PlannedProjects from "./PlannedProjects";
+import DebtService from "./DebtService";
 import ChatPanel from "./ChatPanel";
 
 export default function Dashboard({
@@ -53,6 +54,7 @@ export default function Dashboard({
           {hasYoy && <YearOverYear budget={budget} />}
           <TaxImpact budget={budget} />
           <PlannedProjects budget={budget} />
+          <DebtService budget={budget} />
         </div>
 
         <div className="lg:col-span-1">

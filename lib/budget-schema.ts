@@ -43,6 +43,20 @@ export const plannedProjectSchema = z.object({
   timeframe: z.string().optional(),
 });
 
+/** One debt-service line item with its amount in a given year. */
+export const debtYearAmountSchema = z.object({
+  year: z.string().min(1),
+  amount: z.number().finite(),
+});
+
+/** A debt-service item (e.g. a bond or loan) with per-year payment amounts. */
+export const debtItemSchema = z.object({
+  name: z.string().min(1),
+  /** Optional fund grouping, e.g. "General Fund", "Enterprise Funds". */
+  fund: z.string().optional(),
+  years: z.array(debtYearAmountSchema).min(1),
+});
+
 export const budgetDataSchema = z.object({
   title: z.string(),
   municipality: z.string(),
@@ -60,6 +74,8 @@ export const budgetDataSchema = z.object({
   taxImpact: taxImpactSchema.optional(),
   /** Planned capital projects / initiatives, when present. */
   plannedProjects: z.array(plannedProjectSchema).optional(),
+  /** Multi-year debt-service schedule (debt/loan payments by year), when present. */
+  debtService: z.array(debtItemSchema).optional(),
 });
 
 export type LineItem = z.infer<typeof lineItemSchema>;
@@ -67,6 +83,7 @@ export type RevenueItem = z.infer<typeof revenueItemSchema>;
 export type YearTotal = z.infer<typeof yearTotalSchema>;
 export type TaxImpact = z.infer<typeof taxImpactSchema>;
 export type PlannedProject = z.infer<typeof plannedProjectSchema>;
+export type DebtItem = z.infer<typeof debtItemSchema>;
 export type BudgetData = z.infer<typeof budgetDataSchema>;
 
 /**
@@ -215,7 +232,61 @@ export function normalizeBudget(raw: unknown): unknown {
     ...normalizeExtendedSummary(rec),
     ...normalizeTaxImpact(rec),
     ...normalizePlannedProjects(rec),
+    ...normalizeDebtService(rec),
   };
+}
+
+type DebtItemOut = {
+  name: string;
+  fund?: string;
+  years: Array<{ year: string; amount: number }>;
+};
+
+/**
+ * Build the debtService array: for each item, coerce its per-year amounts and
+ * drop years without a valid figure. Items with no name or no usable year rows
+ * are dropped; the whole field is omitted when nothing valid remains (same
+ * rules as the other optional sections).
+ */
+function normalizeDebtService(
+  rec: Record<string, unknown>,
+): { debtService?: DebtItemOut[] } {
+  const raw = rec.debtService ?? rec.debt_service ?? rec.debt;
+  if (!Array.isArray(raw)) return {};
+
+  const items = raw
+    .map((item): DebtItemOut | null => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      if (!name) return null;
+
+      const yearsRaw = Array.isArray(r.years) ? r.years : [];
+      const years = yearsRaw
+        .map((y) => {
+          if (!y || typeof y !== "object") return null;
+          const yr = y as Record<string, unknown>;
+          const year =
+            typeof yr.year === "string"
+              ? yr.year.trim()
+              : yr.year != null
+                ? String(yr.year).trim()
+                : "";
+          const amount = parseAmount(yr.amount ?? yr.total);
+          if (!year || amount === null) return null;
+          return { year, amount };
+        })
+        .filter((y): y is { year: string; amount: number } => y !== null);
+
+      if (years.length === 0) return null;
+
+      const out: DebtItemOut = { name, years };
+      if (typeof r.fund === "string" && r.fund.trim()) out.fund = r.fund.trim();
+      return out;
+    })
+    .filter((x): x is DebtItemOut => x !== null);
+
+  return items.length > 0 ? { debtService: items } : {};
 }
 
 function normalizeExtendedSummary(

@@ -10,11 +10,14 @@ describe("buildExtractionPrompt", () => {
     expect(prompt).toContain("Do not invent");
   });
 
-  it("truncates very long documents", () => {
-    const huge = "x".repeat(200_000);
+  it("truncates documents longer than the character cap", () => {
+    // Larger than MAX_TEXT_CHARS (600k) so clipping actually happens.
+    const huge = "x".repeat(700_000);
     const prompt = buildExtractionPrompt(huge);
-    // The clipped text must be shorter than the raw input.
-    expect(prompt.length).toBeLessThan(huge.length + 2000);
+    // The document portion is clipped, so the whole prompt stays well under
+    // the raw input length (guidance text is only a couple thousand chars).
+    expect(prompt.length).toBeLessThan(huge.length);
+    expect(prompt.length).toBeLessThan(270_000);
   });
 });
 

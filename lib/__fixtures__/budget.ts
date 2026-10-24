@@ -57,6 +57,21 @@ export const richBudget: BudgetData = {
     },
     { name: "Road Repaving Program", amount: 1_200_000 },
   ],
+  debtService: [
+    {
+      name: "Jones Library Renovation",
+      fund: "General Fund",
+      years: [
+        { year: "FY27", amount: 1_182_845 },
+        { year: "FY28", amount: 1_123_350 },
+      ],
+    },
+    {
+      name: "Water Main Replacement",
+      fund: "Enterprise Funds",
+      years: [{ year: "FY27", amount: 98_050 }],
+    },
+  ],
 };
 
 /**

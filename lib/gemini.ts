@@ -15,12 +15,13 @@ const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 /**
  * Max characters of PDF text to send to the model. This is a self-imposed
- * guard, not a Gemini limit: the flash models have ~1M-token context windows
- * (~3-4M chars), so 600k leaves ample headroom while covering even large
- * ~300-page budget PDFs in full. Raising it lets fields like tax impact and
- * planned projects — which often appear deeper in the document — be found.
+ * guard, not a Gemini limit. It's a balance: too small and we miss content
+ * deeper in large budgets; too large (e.g. the full 400k+ chars of a 300-page
+ * PDF) and extraction quality drops — the model returns thin, inconsistent
+ * results. 250k covers well beyond a typical budget's summary/overview section
+ * while keeping extraction reliable.
  */
-const MAX_TEXT_CHARS = 600_000;
+const MAX_TEXT_CHARS = 250_000;
 
 export class GeminiError extends Error {
   constructor(message: string) {
@@ -172,6 +173,28 @@ const budgetResponseSchema: ResponseSchema = {
         required: ["name"],
       },
     },
+    debtService: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          name: { type: SchemaType.STRING },
+          fund: { type: SchemaType.STRING },
+          years: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                year: { type: SchemaType.STRING },
+                amount: { type: SchemaType.NUMBER },
+              },
+              required: ["year", "amount"],
+            },
+          },
+        },
+        required: ["name", "years"],
+      },
+    },
   },
   required: [
     "title",
@@ -232,6 +255,11 @@ export function buildExtractionPrompt(text: string): string {
     "- plannedProjects: capital projects or planned initiatives, each with name,",
     "  amount (if given), description, and timeframe/status (if given). Omit if",
     "  the document lists none.",
+    "- debtService: IF the document has a multi-year debt-service / principal-",
+    "  and-interest schedule, list each debt item with its name, an optional",
+    "  fund grouping (e.g. 'General Fund', 'Enterprise Funds'), and a years array",
+    "  of { year, amount } across the years shown. Omit if there is no such",
+    "  schedule.",
     "Do not invent numbers. If a listed section is not present, return an empty",
     "array for it (or omit the optional objects).",
     "",
@@ -302,6 +330,9 @@ export function buildPdfExtractionPrompt(): string {
     "- plannedProjects: capital projects / planned initiatives, each with name,",
     "  amount (if given), description, and timeframe/status (if given). Omit if",
     "  none.",
+    "- debtService: IF a multi-year debt-service / principal-and-interest",
+    "  schedule is present, list each debt item with name, optional fund, and a",
+    "  years array of { year, amount }. Omit if absent.",
     "- transcription: a plain-text transcription of the budget tables and key",
     "  figures you read, so the data can be referenced later. Keep it factual.",
     "Do not invent numbers. If a listed section is not present, return an empty",

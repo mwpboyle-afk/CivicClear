@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import ExtendedSummary from "./ExtendedSummary";
 import TaxImpact from "./TaxImpact";
 import PlannedProjects from "./PlannedProjects";
+import DebtService from "./DebtService";
 import { sampleBudget, richBudget } from "@/lib/__fixtures__/budget";
 
 describe("ExtendedSummary", () => {
@@ -65,6 +66,27 @@ describe("PlannedProjects", () => {
     render(<PlannedProjects budget={sampleBudget} />);
     expect(
       screen.getByText(/No planned projects were found/i),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("DebtService", () => {
+  it("renders items, year columns, and fund groupings", () => {
+    render(<DebtService budget={richBudget} />);
+    expect(screen.getByText("Jones Library Renovation")).toBeInTheDocument();
+    expect(screen.getByText("Water Main Replacement")).toBeInTheDocument();
+    // Fund group headers.
+    expect(screen.getByText("General Fund")).toBeInTheDocument();
+    expect(screen.getByText("Enterprise Funds")).toBeInTheDocument();
+    // Year columns from the union of all items' years.
+    expect(screen.getByText("FY27")).toBeInTheDocument();
+    expect(screen.getByText("FY28")).toBeInTheDocument();
+  });
+
+  it("shows an empty state when there is no debt schedule", () => {
+    render(<DebtService budget={sampleBudget} />);
+    expect(
+      screen.getByText(/No multi-year debt-service schedule/i),
     ).toBeInTheDocument();
   });
 });

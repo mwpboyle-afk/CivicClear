@@ -279,3 +279,52 @@ describe("parseBudget — new optional fields validate", () => {
     expect(budget.plannedProjects?.[0].name).toBe("Project A");
   });
 });
+
+describe("normalizeBudget — debt service", () => {
+  it("normalizes items, coerces year amounts, and keeps fund groupings", () => {
+    const r = normalizeBudget({
+      debtService: [
+        {
+          name: "Jones Library Renovation",
+          fund: "General Fund",
+          years: [
+            { year: "FY27", amount: "1,182,845" },
+            { year: "FY28", amount: "$1,123,350" },
+          ],
+        },
+        {
+          name: "Water Main",
+          years: [{ year: "FY27", amount: 98050 }],
+        },
+      ],
+    }) as any;
+    expect(r.debtService).toHaveLength(2);
+    expect(r.debtService[0]).toEqual({
+      name: "Jones Library Renovation",
+      fund: "General Fund",
+      years: [
+        { year: "FY27", amount: 1_182_845 },
+        { year: "FY28", amount: 1_123_350 },
+      ],
+    });
+    // No fund provided -> fund omitted.
+    expect(r.debtService[1].fund).toBeUndefined();
+  });
+
+  it("drops items with no name or no valid year rows", () => {
+    const r = normalizeBudget({
+      debtService: [
+        { fund: "X", years: [{ year: "FY27", amount: 1 }] }, // no name
+        { name: "Bad", years: [{ year: "", amount: "n/a" }] }, // no valid years
+        { name: "Good", years: [{ year: "FY27", amount: 500 }] },
+      ],
+    }) as any;
+    expect(r.debtService).toHaveLength(1);
+    expect(r.debtService[0].name).toBe("Good");
+  });
+
+  it("omits debtService entirely when nothing valid remains", () => {
+    const r = normalizeBudget({ debtService: [{ name: "X", years: [] }] }) as any;
+    expect(r.debtService).toBeUndefined();
+  });
+});
