@@ -1,0 +1,73 @@
+/**
+ * PDF text extraction using pdfjs-dist (a current pdf.js). Runs in the Node
+ * runtime only. We use the legacy build and disable the worker so it runs in a
+ * plain Node process without a DOM or separate worker thread.
+ */
+
+export class PdfExtractionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PdfExtractionError";
+  }
+}
+
+/**
+ * Extract plain text from a PDF buffer.
+ * @throws PdfExtractionError when the buffer is empty, not a PDF, or yields no
+ * extractable text (e.g. a scanned/image-only PDF).
+ */
+export async function extractPdfText(buffer: Buffer): Promise<string> {
+  if (!buffer || buffer.length === 0) {
+    throw new PdfExtractionError("The uploaded file is empty.");
+  }
+
+  // A PDF file begins with the "%PDF" marker.
+  const header = buffer.subarray(0, 5).toString("latin1");
+  if (!header.startsWith("%PDF")) {
+    throw new PdfExtractionError("The uploaded file does not look like a PDF.");
+  }
+
+  let fullText: string;
+  try {
+    // Lazy, legacy build: safe to load in a Node serverless function.
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
+    const data = new Uint8Array(buffer);
+    const loadingTask = pdfjs.getDocument({
+      data,
+      // Disable the external worker; run everything on the main thread.
+      disableWorker: true,
+      // Keep pdf.js from trying to fetch standard fonts over the network.
+      isEvalSupported: false,
+      useSystemFonts: true,
+    } as unknown as Parameters<typeof pdfjs.getDocument>[0]);
+
+    const doc = await loadingTask.promise;
+    const parts: string[] = [];
+    for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+      const page = await doc.getPage(pageNum);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ");
+      parts.push(pageText);
+    }
+    await doc.destroy();
+    fullText = parts.join("\n").replace(/[ \t]+/g, " ").trim();
+  } catch (err) {
+    throw new PdfExtractionError(
+      `Could not read the PDF: ${
+        err instanceof Error ? err.message : "unknown error"
+      }`,
+    );
+  }
+
+  if (fullText.length === 0) {
+    throw new PdfExtractionError(
+      "No text could be extracted. This may be a scanned/image-only PDF, " +
+        "which is not supported.",
+    );
+  }
+
+  return fullText;
+}

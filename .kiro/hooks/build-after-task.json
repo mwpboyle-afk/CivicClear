@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Build check after task completion",
+      "trigger": "PostTaskExec",
+      "description": "Runs the production build after a spec task is marked complete, verifying the app still compiles before moving on to the next task.",
+      "action": {
+        "type": "command",
+        "command": "npm run build",
+        "timeout": 300
+      }
+    }
+  ]
+}

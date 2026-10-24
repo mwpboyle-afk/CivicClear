@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run tests on source save",
+      "trigger": "PostFileSave",
+      "description": "Runs the Vitest suite whenever a TypeScript source or test file is saved, so regressions surface immediately during development.",
+      "matcher": "\\.(ts|tsx)$",
+      "action": {
+        "type": "command",
+        "command": "npm test --silent",
+        "timeout": 120
+      }
+    }
+  ]
+}
