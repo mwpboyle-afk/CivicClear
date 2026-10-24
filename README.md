@@ -2,18 +2,16 @@
 
 **Hackachusetts track: Civic Services**
 
+**Live demo: https://sundai-hack.vercel.app**
+
 Municipal budgets are published as long, dense PDFs that most residents can't
 realistically read. **CivicLens** turns a budget PDF into something a resident
 can actually use:
 
-1. **Upload** a municipal budget PDF (or try a bundled sample, picked at random).
+1. **Upload** a municipal budget PDF (or try a bundled sample).
 2. **Explore** it through visualizations — KPI cards, a spending pie chart,
-   revenue vs. expenditure, and a year-over-year trend when the document has
-   multi-year data.
-3. **Ask** plain-English questions and get answers grounded strictly in the
-   document.
-
-Live demo: https://sundai-hack.vercel.app
+   revenue vs. expenditure, and a year-over-year trend.
+3. **Ask** plain-English questions and get answers grounded in the document.
 
 ## How it works
 
@@ -28,97 +26,38 @@ Upload PDF ──► /api/analyze ──► pdfjs-dist (PDF → text)
 Ask a question ──► /api/ask ──► Gemini (answer grounded in the budget context)
 ```
 
-- No database — an analyzed budget lives in the browser for the session.
-- No vector store — municipal budgets are small enough to pass the full
-  extracted text + structured JSON directly as context.
-
 ## Tech stack
 
-- **Next.js 14** (App Router, TypeScript) — one app, deployed to Vercel
-- **pdfjs-dist** — PDF text extraction (handles modern PDFs with xref streams)
-- **Google Gemini** (`gemini-3.5-flash-lite` by default, set `GEMINI_MODEL` to
-  override) via `@google/generative-ai` — structured extraction + grounded Q&A
-- **Zod** — validates and normalizes all model output
-- **Recharts** + **Tailwind CSS** — visualizations and UI
-- **Vitest** + **@testing-library/react** — tests
+Next.js 14 (App Router, TypeScript), Google Gemini, pdfjs-dist, Zod, Recharts,
+Tailwind CSS, Vitest. Deployed on Vercel.
 
-## Getting started
+## Run it locally
 
-### Prerequisites
-
-- Node.js 18+ (developed on Node 20+)
-- A Google Gemini API key (free tier): https://aistudio.google.com/app/apikey
-
-### Setup
+Requires Node.js 18+ and a [Google Gemini API key](https://aistudio.google.com/app/apikey).
 
 ```bash
 npm install
-cp .env.example .env.local   # then put your key in .env.local
+cp .env.example .env.local        # add your GEMINI_API_KEY to .env.local
+npm run dev                       # http://localhost:3000
 ```
 
-`.env.local`:
-
-```
-GEMINI_API_KEY=your_key_here
-```
-
-### Run
+Then upload a municipal budget PDF, or click **Try a sample budget**.
 
 ```bash
-npm run dev      # http://localhost:3000
+npm test                          # run the test suite
 ```
-
-Open the app and upload a text-based municipal budget PDF, or click **Try a
-sample budget** to analyze a random bundled sample.
-
-### Sample budgets
-
-The "Try a sample budget" button picks a random PDF from `public/samples/`,
-listed in `public/samples/manifest.json`. Add your own by dropping a PDF there
-and adding an entry to the manifest (see `public/samples/README.md`). If the
-manifest is empty, the button is hidden and upload still works.
-
-## Testing
-
-```bash
-npm test         # run the Vitest suite once
-npm run test:watch
-npm run lint
-npm run build    # production build / type-check
-```
-
-The suite covers currency normalization, the Zod schema, PDF extraction (against
-a real PDF fixture), both API routes (with the model mocked), and the UI
-components (upload, dashboard, charts, and the grounded chat flow).
-
-## Deploying to Vercel
-
-1. Push this repo to GitHub.
-2. Import it into Vercel.
-3. Add a project environment variable: `GEMINI_API_KEY`.
-4. Deploy. The app runs the API routes in the Node runtime (required by
-   `pdfjs-dist`); this is already configured via `runtime = "nodejs"` and
-   `serverComponentsExternalPackages`.
 
 ## How we used Kiro
 
-See **[KIRO.md](./KIRO.md)** for the full write-up (spec-driven development,
-steering docs, and agent hooks). All Kiro artifacts live in the committed
-[`.kiro/`](./.kiro) directory:
+See **[KIRO.md](./KIRO.md)** for the full write-up. All Kiro artifacts are in
+the committed [`.kiro/`](./.kiro) directory: steering docs, the feature spec
+(requirements, design, tasks), and agent hooks.
 
-- `.kiro/steering/` — product, tech, and structure guidance that shaped the build
-- `.kiro/specs/budget-explorer/` — requirements, design, and tasks
-- `.kiro/hooks/` — agent hooks (run tests on save; build after task completion)
+## Notes
 
-## Scope & limitations
-
-- Hackathon prototype: single session, no auth, no persistence.
-- Reads **text-based** PDFs via `pdfjs-dist`, and **scanned/image-only** PDFs
-  via a Gemini multimodal fallback (the model reads the pages visually and also
-  returns a transcription so Q&A stays grounded). Scanned analysis is slower and
-  uses more tokens.
-- Extraction quality depends on the model and the document's structure; all
-  figures shown come from the uploaded document, not invented.
+- Reads both text-based and scanned/image PDFs (scanned documents take a little
+  longer). All figures come from the uploaded document.
+- Hackathon prototype: single session, no accounts, no persistence.
 
 ## License
 
