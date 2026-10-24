@@ -71,9 +71,12 @@ the committed [`.kiro/`](./.kiro) directory: steering docs, the feature spec
 
 - Reads both text-based and scanned/image PDFs (scanned documents take a little
   longer). All figures come from the uploaded document.
-- For very large budgets (hundreds of pages), the dashboard focuses on the
-  summary and overview sections; the chat can answer questions about details
-  found deeper in the document. Small-to-mid-size budgets are analyzed in full.
+- To stay within the model's context window, the app sends up to the first
+  ~250,000 characters of extracted text (roughly 125–160 budget pages) per
+  analysis. Small-to-mid-size budgets fit in full; for very large budgets
+  (hundreds of pages) the dashboard reflects the earlier sections, and content
+  past the cap may not appear. This cap is a single constant (`MAX_TEXT_CHARS`
+  in `lib/gemini.ts`) and can be raised.
 - Hackathon prototype, built as a proof of concept (no accounts). Saved reports
   are stored in your browser (localStorage) — they persist on that device but
   aren't shared across devices or users.
