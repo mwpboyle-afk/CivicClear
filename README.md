@@ -13,7 +13,7 @@ can actually use:
 3. **Ask** plain-English questions and get answers grounded strictly in the
    document.
 
-Live demo: _add your Vercel URL here_
+Live demo: https://sundai-hack.vercel.app
 
 ## How it works
 

@@ -45,15 +45,27 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
     // Lazy, legacy build: safe to load in a Node serverless function.
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
+    // pdfjs-dist 4.x always wants a worker module, even on the main thread.
+    // Point it at the real worker file (resolved from the installed package)
+    // so it loads in Node and in Vercel's serverless bundle instead of failing
+    // with "Cannot find module pdf.worker.mjs".
+    try {
+      const { createRequire } = await import("module");
+      const require = createRequire(import.meta.url);
+      pdfjs.GlobalWorkerOptions.workerSrc = require.resolve(
+        "pdfjs-dist/legacy/build/pdf.worker.mjs",
+      );
+    } catch {
+      // If resolution fails, fall through; getDocument may still work.
+    }
+
     const data = new Uint8Array(buffer);
     const loadingTask = pdfjs.getDocument({
       data,
-      // Disable the external worker; run everything on the main thread.
-      disableWorker: true,
       // Keep pdf.js from trying to fetch standard fonts over the network.
       isEvalSupported: false,
       useSystemFonts: true,
-    } as unknown as Parameters<typeof pdfjs.getDocument>[0]);
+    });
 
     const doc = await loadingTask.promise;
     const parts: string[] = [];
