@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   PieChart,
   Pie,
@@ -27,6 +28,9 @@ const COLORS = [
 ];
 
 export default function CategoryPie({ budget }: { budget: BudgetData }) {
+  // Which slice/legend entry is currently hovered (null = none).
+  const [hovered, setHovered] = useState<number | null>(null);
+
   // Use the same breakdown as the KPI cards so the counts always agree.
   const { items: source, label } = selectBreakdown(budget);
 
@@ -75,9 +79,21 @@ export default function CategoryPie({ budget }: { budget: BudgetData }) {
             outerRadius={100}
             labelLine={false}
             label={renderPercent}
+            onMouseEnter={(_, i) => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+            isAnimationActive={false}
           >
             {data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              <Cell
+                key={i}
+                fill={COLORS[i % COLORS.length]}
+                // When a slice is hovered, dim the others so the selected one
+                // (and its legend entry) stands out.
+                fillOpacity={hovered === null || hovered === i ? 1 : 0.25}
+                stroke={hovered === i ? "#0f172a" : "#ffffff"}
+                strokeWidth={hovered === i ? 2 : 1}
+                style={{ transition: "fill-opacity 120ms ease" }}
+              />
             ))}
           </Pie>
           <Tooltip
@@ -87,14 +103,63 @@ export default function CategoryPie({ budget }: { budget: BudgetData }) {
             }}
           />
           <Legend
-            layout="horizontal"
-            verticalAlign="bottom"
-            align="center"
-            wrapperStyle={{ fontSize: 12 }}
+            content={
+              <InteractiveLegend
+                data={data}
+                hovered={hovered}
+                onHover={setHovered}
+              />
+            }
           />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>
+  );
+}
+
+/**
+ * Custom legend: hovering an entry highlights it and drives the same slice
+ * dimming via onHover; the entry matching the hovered slice is brightened and
+ * bolded while the others are dimmed.
+ */
+function InteractiveLegend({
+  data,
+  hovered,
+  onHover,
+}: {
+  data: Array<{ name: string; amount: number }>;
+  hovered: number | null;
+  onHover: (index: number | null) => void;
+}) {
+  return (
+    <ul className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+      {data.map((entry, i) => {
+        const active = hovered === i;
+        const dimmed = hovered !== null && !active;
+        return (
+          <li
+            key={entry.name}
+            onMouseEnter={() => onHover(i)}
+            onMouseLeave={() => onHover(null)}
+            className="flex cursor-default items-center gap-1.5"
+            style={{ opacity: dimmed ? 0.4 : 1, transition: "opacity 120ms ease" }}
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: COLORS[i % COLORS.length] }}
+            />
+            <span
+              className={
+                active ? "font-semibold text-slate-900" : "text-slate-600"
+              }
+            >
+              {entry.name}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
