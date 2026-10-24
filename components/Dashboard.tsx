@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { BudgetData } from "@/lib/budget-schema";
 import KpiCards from "./KpiCards";
 import CategoryPie from "./CategoryPie";
@@ -7,9 +8,8 @@ import RevenueVsExpense from "./RevenueVsExpense";
 import YearOverYear from "./YearOverYear";
 import ExtendedSummary from "./ExtendedSummary";
 import TaxImpact from "./TaxImpact";
-import PlannedProjects from "./PlannedProjects";
-import DebtService from "./DebtService";
 import ChatPanel from "./ChatPanel";
+import PinnedSections, { type PinnedSection } from "./PinnedSections";
 
 export default function Dashboard({
   budget,
@@ -21,6 +21,20 @@ export default function Dashboard({
   onReset: () => void;
 }) {
   const hasYoy = !!budget.yearOverYear && budget.yearOverYear.length >= 2;
+
+  const [pinned, setPinned] = useState<PinnedSection[]>([]);
+  const pinnedIds = new Set(pinned.map((p) => p.id));
+
+  function addPinned(section: PinnedSection) {
+    // Ignore duplicates (same question pinned twice).
+    setPinned((prev) =>
+      prev.some((p) => p.id === section.id) ? prev : [...prev, section],
+    );
+  }
+
+  function removePinned(id: string) {
+    setPinned((prev) => prev.filter((p) => p.id !== id));
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -53,12 +67,18 @@ export default function Dashboard({
           <RevenueVsExpense budget={budget} />
           {hasYoy && <YearOverYear budget={budget} />}
           <TaxImpact budget={budget} />
-          <PlannedProjects budget={budget} />
-          <DebtService budget={budget} />
+          <PinnedSections sections={pinned} onRemove={removePinned} />
         </div>
 
         <div className="lg:col-span-1">
-          <ChatPanel budget={budget} text={text} />
+          <div className="lg:sticky lg:top-6">
+            <ChatPanel
+              budget={budget}
+              text={text}
+              onPin={addPinned}
+              pinnedIds={pinnedIds}
+            />
+          </div>
         </div>
       </div>
     </div>

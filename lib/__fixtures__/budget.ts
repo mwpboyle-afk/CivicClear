@@ -52,30 +52,6 @@ export const richBudget: BudgetData = {
     ],
     note: "Estimated for a median-valued home.",
   },
-  plannedProjects: [
-    {
-      name: "New Fire Station",
-      amount: 2_500_000,
-      description: "Replace aging Station 2.",
-      timeframe: "FY27–FY29",
-    },
-    { name: "Road Repaving Program", amount: 1_200_000 },
-  ],
-  debtService: [
-    {
-      name: "Jones Library Renovation",
-      fund: "General Fund",
-      years: [
-        { year: "FY27", amount: 1_182_845 },
-        { year: "FY28", amount: 1_123_350 },
-      ],
-    },
-    {
-      name: "Water Main Replacement",
-      fund: "Enterprise Funds",
-      years: [{ year: "FY27", amount: 98_050 }],
-    },
-  ],
 };
 
 /**

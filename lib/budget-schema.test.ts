@@ -235,50 +235,8 @@ describe("normalizeBudget — tax impact", () => {
   });
 });
 
-describe("normalizeBudget — planned projects", () => {
-  it("normalizes projects and drops nameless entries", () => {
-    const r = normalizeBudget({
-      plannedProjects: [
-        {
-          name: "New Fire Station",
-          amount: "$2,500,000",
-          description: "Replace Station 2",
-          timeframe: "FY27-FY29",
-        },
-        { amount: 100 }, // dropped: no name
-        { title: "Road Repaving", cost: "1.2M" }, // alt keys
-      ],
-    }) as any;
-    expect(r.plannedProjects).toHaveLength(2);
-    expect(r.plannedProjects[0]).toEqual({
-      name: "New Fire Station",
-      amount: 2_500_000,
-      description: "Replace Station 2",
-      timeframe: "FY27-FY29",
-    });
-    expect(r.plannedProjects[1]).toEqual({
-      name: "Road Repaving",
-      amount: 1_200_000,
-    });
-  });
-
-  it("omits plannedProjects when none are valid", () => {
-    const r = normalizeBudget({ plannedProjects: [{ amount: 5 }] }) as any;
-    expect(r.plannedProjects).toBeUndefined();
-  });
-
-  it("treats a zero amount as no amount (avoids a misleading $0)", () => {
-    const r = normalizeBudget({
-      plannedProjects: [{ name: "New School", amount: 0 }],
-    }) as any;
-    expect(r.plannedProjects).toHaveLength(1);
-    expect(r.plannedProjects[0]).toEqual({ name: "New School" });
-    expect(r.plannedProjects[0].amount).toBeUndefined();
-  });
-});
-
-describe("parseBudget — new optional fields validate", () => {
-  it("accepts a budget with tax impact and projects", () => {
+describe("parseBudget — optional fields validate", () => {
+  it("accepts a budget with an extended summary and tax impact", () => {
     const budget = parseBudget({
       title: "t",
       municipality: "m",
@@ -291,59 +249,9 @@ describe("parseBudget — new optional fields validate", () => {
       summary: "s",
       extendedSummary: "longer",
       taxImpact: { taxRatePer1000: 18.5 },
-      plannedProjects: [{ name: "Project A", amount: 1000 }],
     });
     expect(() => budgetDataSchema.parse(budget)).not.toThrow();
     expect(budget.taxImpact?.taxRatePer1000).toBe(18.5);
-    expect(budget.plannedProjects?.[0].name).toBe("Project A");
-  });
-});
-
-describe("normalizeBudget — debt service", () => {
-  it("normalizes items, coerces year amounts, and keeps fund groupings", () => {
-    const r = normalizeBudget({
-      debtService: [
-        {
-          name: "Jones Library Renovation",
-          fund: "General Fund",
-          years: [
-            { year: "FY27", amount: "1,182,845" },
-            { year: "FY28", amount: "$1,123,350" },
-          ],
-        },
-        {
-          name: "Water Main",
-          years: [{ year: "FY27", amount: 98050 }],
-        },
-      ],
-    }) as any;
-    expect(r.debtService).toHaveLength(2);
-    expect(r.debtService[0]).toEqual({
-      name: "Jones Library Renovation",
-      fund: "General Fund",
-      years: [
-        { year: "FY27", amount: 1_182_845 },
-        { year: "FY28", amount: 1_123_350 },
-      ],
-    });
-    // No fund provided -> fund omitted.
-    expect(r.debtService[1].fund).toBeUndefined();
-  });
-
-  it("drops items with no name or no valid year rows", () => {
-    const r = normalizeBudget({
-      debtService: [
-        { fund: "X", years: [{ year: "FY27", amount: 1 }] }, // no name
-        { name: "Bad", years: [{ year: "", amount: "n/a" }] }, // no valid years
-        { name: "Good", years: [{ year: "FY27", amount: 500 }] },
-      ],
-    }) as any;
-    expect(r.debtService).toHaveLength(1);
-    expect(r.debtService[0].name).toBe("Good");
-  });
-
-  it("omits debtService entirely when nothing valid remains", () => {
-    const r = normalizeBudget({ debtService: [{ name: "X", years: [] }] }) as any;
-    expect(r.debtService).toBeUndefined();
+    expect(budget.extendedSummary).toBe("longer");
   });
 });
