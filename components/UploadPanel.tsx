@@ -4,12 +4,14 @@ import { useState, useRef } from "react";
 
 export default function UploadPanel({
   onAnalyze,
-  onAnalyzeSample,
+  onTrySample,
+  sampleCount = 0,
   loading,
   error,
 }: {
   onAnalyze: (file: File) => void;
-  onAnalyzeSample: () => void;
+  onTrySample?: () => void;
+  sampleCount?: number;
   loading: boolean;
   error: string | null;
 }) {
@@ -72,13 +74,18 @@ export default function UploadPanel({
               >
                 Choose a PDF
               </button>
-              <span className="text-xs text-slate-400">or</span>
-              <button
-                onClick={onAnalyzeSample}
-                className="rounded-lg border border-brand px-5 py-2.5 text-sm font-medium text-brand hover:bg-blue-50"
-              >
-                Load Amherst FY27 sample
-              </button>
+              {onTrySample && (
+                <>
+                  <span className="text-xs text-slate-400">or</span>
+                  <button
+                    onClick={onTrySample}
+                    className="rounded-lg border border-brand px-5 py-2.5 text-sm font-medium text-brand hover:bg-blue-50"
+                  >
+                    Try a sample budget
+                    {sampleCount > 1 ? ` (${sampleCount} available)` : ""}
+                  </button>
+                </>
+              )}
             </div>
             <input
               ref={inputRef}
@@ -101,9 +108,9 @@ export default function UploadPanel({
       )}
 
       <p className="mt-8 max-w-md text-center text-xs text-slate-400">
-        CivicLens reads text-based PDFs. Scanned/image-only documents are not
-        supported. Your document is analyzed for this session only and is not
-        stored.
+        CivicLens reads both text-based and scanned/image PDFs (scanned
+        documents take a little longer). Your document is analyzed for this
+        session only and is not stored.
       </p>
     </main>
   );

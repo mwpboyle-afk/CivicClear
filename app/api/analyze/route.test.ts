@@ -3,17 +3,27 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { budgetDataSchema } from "@/lib/budget-schema";
 
 // Mock the heavy I/O dependencies so the route logic can be tested in isolation.
-vi.mock("@/lib/pdf", () => ({
-  PdfExtractionError: class PdfExtractionError extends Error {},
-  extractPdfText: vi.fn(),
-}));
+vi.mock("@/lib/pdf", () => {
+  class PdfExtractionError extends Error {}
+  class NoTextLayerError extends PdfExtractionError {}
+  return {
+    PdfExtractionError,
+    NoTextLayerError,
+    extractPdfText: vi.fn(),
+  };
+});
 vi.mock("@/lib/gemini", () => ({
   GeminiError: class GeminiError extends Error {},
   structureBudget: vi.fn(),
+  structureBudgetFromPdf: vi.fn(),
 }));
 
-import { extractPdfText, PdfExtractionError } from "@/lib/pdf";
-import { structureBudget, GeminiError } from "@/lib/gemini";
+import { extractPdfText, PdfExtractionError, NoTextLayerError } from "@/lib/pdf";
+import {
+  structureBudget,
+  structureBudgetFromPdf,
+  GeminiError,
+} from "@/lib/gemini";
 import { POST } from "./route";
 
 function makeRequest(file: File | null): Request {
@@ -94,5 +104,42 @@ describe("POST /api/analyze", () => {
     const body = await res.json();
     expect(() => budgetDataSchema.parse(body.budget)).not.toThrow();
     expect(body.budget.municipality).toBe("Amherst");
+  });
+
+  it("falls back to the image path for scanned PDFs (no text layer)", async () => {
+    // No text layer -> route should call structureBudgetFromPdf instead.
+    (extractPdfText as any).mockRejectedValue(
+      new (NoTextLayerError as any)("scanned"),
+    );
+    (structureBudgetFromPdf as any).mockResolvedValue({
+      data: validRawBudget,
+      transcription: "Fire Department: $5,200,000 ... (transcribed)",
+    });
+
+    const file = new File([new Uint8Array([1, 2, 3])], "scan.pdf", {
+      type: "application/pdf",
+    });
+    const res = await POST(makeRequest(file) as any);
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(structureBudgetFromPdf).toHaveBeenCalledOnce();
+    expect(structureBudget).not.toHaveBeenCalled();
+    expect(() => budgetDataSchema.parse(body.budget)).not.toThrow();
+    expect(body.scanned).toBe(true);
+    // Chat is grounded on the model's transcription when there's no text layer.
+    expect(body.text).toContain("transcribed");
+  });
+
+  it("returns 502 when the image fallback model call fails", async () => {
+    (extractPdfText as any).mockRejectedValue(
+      new (NoTextLayerError as any)("scanned"),
+    );
+    (structureBudgetFromPdf as any).mockRejectedValue(
+      new (GeminiError as any)("vision model unavailable"),
+    );
+    const file = new File([new Uint8Array([1])], "scan.pdf");
+    const res = await POST(makeRequest(file) as any);
+    expect(res.status).toBe(502);
   });
 });

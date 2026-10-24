@@ -4,7 +4,7 @@
 .
 ├── app/
 │   ├── layout.tsx            # Root layout + metadata
-│   ├── page.tsx              # Home: upload UI + sample button + dashboard
+│   ├── page.tsx              # Home: upload UI + dashboard orchestration
 │   ├── globals.css           # Tailwind entry + base styles
 │   └── api/
 │       ├── analyze/route.ts  # PDF -> text -> Gemini -> BudgetData JSON
@@ -12,11 +12,9 @@
 ├── components/               # React UI (upload, dashboard, charts, chat)
 ├── lib/
 │   ├── budget-schema.ts      # BudgetData type + Zod schema + normalizers
-│   ├── pdf.ts                # pdf-parse extraction helper
+│   ├── pdf.ts                # pdfjs-dist text-extraction helper
 │   ├── gemini.ts             # Gemini client, prompts, structured output
 │   └── *.test.ts             # Unit tests co-located with source
-├── public/
-│   └── samples/              # Bundled Amherst FY27 budget PDF
 ├── .kiro/
 │   ├── steering/             # product.md, tech.md, structure.md
 │   ├── specs/                # Feature spec (requirements, design, tasks)

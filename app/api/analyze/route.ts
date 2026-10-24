@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractPdfText, PdfExtractionError } from "@/lib/pdf";
-import { structureBudget, GeminiError } from "@/lib/gemini";
-import { parseBudget } from "@/lib/budget-schema";
+import { analyzeBudgetPdf, AnalyzeError } from "@/lib/analyze";
 
-// pdf-parse requires the Node runtime (not edge).
+// pdfjs-dist requires the Node runtime (not edge).
 export const runtime = "nodejs";
 // Budget analysis can take a while; allow a generous server duration on Vercel.
 export const maxDuration = 60;
@@ -28,37 +26,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 1. Extract text from the PDF.
-  let text: string;
   try {
-    text = await extractPdfText(buffer);
+    const result = await analyzeBudgetPdf(buffer);
+    return NextResponse.json(result);
   } catch (err) {
-    if (err instanceof PdfExtractionError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
+    if (err instanceof AnalyzeError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     return NextResponse.json(
-      { error: "Failed to extract text from the PDF." },
-      { status: 400 },
-    );
-  }
-
-  // 2. Structure the text into BudgetData via Gemini, then validate.
-  try {
-    const raw = await structureBudget(text);
-    const budget = parseBudget(raw);
-    return NextResponse.json({ budget, text });
-  } catch (err) {
-    if (err instanceof GeminiError) {
-      return NextResponse.json({ error: err.message }, { status: 502 });
-    }
-    // Zod or other validation failure.
-    return NextResponse.json(
-      {
-        error:
-          "The budget could not be structured from this document. It may not " +
-          "be a standard budget format.",
-      },
-      { status: 502 },
+      { error: "Something went wrong analyzing the PDF." },
+      { status: 500 },
     );
   }
 }

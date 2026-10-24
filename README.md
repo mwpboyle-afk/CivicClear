@@ -6,7 +6,7 @@ Municipal budgets are published as long, dense PDFs that most residents can't
 realistically read. **CivicLens** turns a budget PDF into something a resident
 can actually use:
 
-1. **Upload** a municipal budget PDF (or load the bundled Amherst FY27 sample).
+1. **Upload** a municipal budget PDF (or try a bundled sample, picked at random).
 2. **Explore** it through visualizations — KPI cards, a spending pie chart,
    revenue vs. expenditure, and a year-over-year trend when the document has
    multi-year data.
@@ -36,8 +36,8 @@ Ask a question ──► /api/ask ──► Gemini (answer grounded in the budge
 
 - **Next.js 14** (App Router, TypeScript) — one app, deployed to Vercel
 - **pdfjs-dist** — PDF text extraction (handles modern PDFs with xref streams)
-- **Google Gemini** (`gemini-3.5-flash`, set `GEMINI_MODEL` to override) via
-  `@google/generative-ai` — structured extraction + grounded Q&A
+- **Google Gemini** (`gemini-3.5-flash-lite` by default, set `GEMINI_MODEL` to
+  override) via `@google/generative-ai` — structured extraction + grounded Q&A
 - **Zod** — validates and normalizes all model output
 - **Recharts** + **Tailwind CSS** — visualizations and UI
 - **Vitest** + **@testing-library/react** — tests
@@ -68,10 +68,15 @@ GEMINI_API_KEY=your_key_here
 npm run dev      # http://localhost:3000
 ```
 
-### Enable the sample button (optional)
+Open the app and upload a text-based municipal budget PDF, or click **Try a
+sample budget** to analyze a random bundled sample.
 
-Place the Amherst FY27 budget PDF at
-`public/samples/amherst-fy27-budget.pdf` (see `public/samples/README.md`).
+### Sample budgets
+
+The "Try a sample budget" button picks a random PDF from `public/samples/`,
+listed in `public/samples/manifest.json`. Add your own by dropping a PDF there
+and adding an entry to the manifest (see `public/samples/README.md`). If the
+manifest is empty, the button is hidden and upload still works.
 
 ## Testing
 
@@ -108,8 +113,10 @@ steering docs, and agent hooks). All Kiro artifacts live in the committed
 ## Scope & limitations
 
 - Hackathon prototype: single session, no auth, no persistence.
-- Reads **text-based** PDFs. Scanned/image-only PDFs (needing OCR) are out of
-  scope and produce a clear error.
+- Reads **text-based** PDFs via `pdfjs-dist`, and **scanned/image-only** PDFs
+  via a Gemini multimodal fallback (the model reads the pages visually and also
+  returns a transcription so Q&A stays grounded). Scanned analysis is slower and
+  uses more tokens.
 - Extraction quality depends on the model and the document's structure; all
   figures shown come from the uploaded document, not invented.
 

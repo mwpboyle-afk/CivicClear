@@ -1,18 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BudgetData } from "@/lib/budget-schema";
 import UploadPanel from "@/components/UploadPanel";
 import Dashboard from "@/components/Dashboard";
 
-const SAMPLE_PDF_URL = "/samples/amherst-fy27-budget.pdf";
-
 type Analysis = { budget: BudgetData; text: string };
+type Sample = { file: string; label: string };
 
 export default function Home() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [samples, setSamples] = useState<Sample[]>([]);
+
+  // Load the list of bundled sample budgets so we can offer a random one.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/samples/manifest.json")
+      .then((res) => (res.ok ? res.json() : { samples: [] }))
+      .then((data) => {
+        if (cancelled) return;
+        const list = Array.isArray(data?.samples) ? data.samples : [];
+        setSamples(
+          list.filter(
+            (s: unknown): s is Sample =>
+              !!s &&
+              typeof (s as Sample).file === "string" &&
+              typeof (s as Sample).label === "string",
+          ),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setSamples([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function analyzeFile(file: File) {
     setError(null);
@@ -31,23 +56,30 @@ export default function Home() {
     }
   }
 
-  async function analyzeSample() {
+  async function analyzeRandomSample() {
+    if (samples.length === 0) return;
+    const pick = samples[Math.floor(Math.random() * samples.length)];
     setError(null);
     setLoading(true);
     try {
-      const pdfRes = await fetch(SAMPLE_PDF_URL);
-      if (!pdfRes.ok) {
+      // Analyze server-side from disk: avoids re-uploading the PDF through the
+      // browser, which would hit Vercel's 4.5 MB request-body limit for the
+      // larger sample files.
+      const res = await fetch("/api/analyze-sample", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file: pick.file }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
         throw new Error(
-          "The sample budget could not be loaded. Make sure the sample PDF is in public/samples/.",
+          data.error || `The sample "${pick.label}" could not be analyzed.`,
         );
       }
-      const blob = await pdfRes.blob();
-      const file = new File([blob], "amherst-fy27-budget.pdf", {
-        type: "application/pdf",
-      });
-      await analyzeFile(file);
+      setAnalysis({ budget: data.budget, text: data.text });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
       setLoading(false);
     }
   }
@@ -68,7 +100,8 @@ export default function Home() {
   return (
     <UploadPanel
       onAnalyze={analyzeFile}
-      onAnalyzeSample={analyzeSample}
+      onTrySample={samples.length > 0 ? analyzeRandomSample : undefined}
+      sampleCount={samples.length}
       loading={loading}
       error={error}
     />

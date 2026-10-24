@@ -10,9 +10,9 @@ client state for the session.
 
 ```mermaid
 flowchart TD
-    U[User] -->|upload PDF or Load Amherst sample| UI[Next.js client]
+    U[User] -->|upload PDF| UI[Next.js client]
     UI -->|POST /api/analyze multipart| A[/api/analyze/]
-    A --> P[lib/pdf.ts: pdf-parse -> text]
+    A --> P[lib/pdf.ts: pdfjs-dist -> text]
     P --> G1[lib/gemini.ts: text -> BudgetData JSON]
     G1 --> Z1[Zod validate + normalize]
     Z1 --> UI
@@ -50,7 +50,7 @@ numbers and drops rows with empty names or non-finite amounts before validation.
 ## API routes
 
 ### POST /api/analyze
-- Runtime: Node (required by `pdf-parse`). `export const runtime = "nodejs"`.
+- Runtime: Node (required by `pdfjs-dist`). `export const runtime = "nodejs"`.
 - Input: multipart form-data with a `file` field (the PDF).
 - Steps: read file → `extractPdfText` → `structureBudget` (Gemini) →
   `normalizeBudget` → Zod `parse` → return `{ budget, text }`.
@@ -74,8 +74,7 @@ numbers and drops rows with empty names or non-finite amounts before validation.
   sending; the compact structured JSON is always included for Q&A.
 
 ## UI components (`components/`)
-- `UploadPanel` — drag-drop + file picker + "Load Amherst sample" + loading +
-  error display.
+- `UploadPanel` — drag-drop + file picker + loading + error display.
 - `Dashboard` — composes the sections below from `BudgetData`.
 - `KpiCards` — total budget, largest department, number of departments.
 - `CategoryPie` — spending by category (falls back to departments).
@@ -85,7 +84,7 @@ numbers and drops rows with empty names or non-finite amounts before validation.
 
 ## Error & empty states
 - Non-PDF / empty text → friendly inline error with retry.
-- Scanned/image PDF (no text) → explain OCR is unsupported.
+- Scanned/image PDF (no text layer) → fall back to Gemini multimodal analysis.
 - Gemini failure / rate limit → retry affordance.
 - Missing `GEMINI_API_KEY` → explicit server error surfaced to the UI.
 
@@ -99,4 +98,4 @@ numbers and drops rows with empty names or non-finite amounts before validation.
 
 ## Deployment
 - Vercel project with `GEMINI_API_KEY` env var.
-- `serverComponentsExternalPackages: ["pdf-parse"]` in `next.config.mjs`.
+- `serverComponentsExternalPackages: ["pdfjs-dist"]` in `next.config.mjs`.

@@ -6,10 +6,12 @@ import {
 } from "@google/generative-ai";
 
 // gemini-1.5-flash and the 2.x models were retired / blocked for new API keys.
-// gemini-3.5-flash is confirmed available for new keys and supports JSON
-// structured output + grounded text. Override with GEMINI_MODEL if your key has
-// access to a different model (e.g. gemini-3.8-flash when it's not overloaded).
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+// gemini-3.5-flash-lite is confirmed available for new keys, supports JSON
+// structured output + grounded text, and has its own separate free-tier daily
+// quota (helpful when the full flash model's quota/availability is exhausted).
+// Override with GEMINI_MODEL (e.g. gemini-3.5-flash for higher quality, or
+// gemini-3.8-flash) when your key/quota allows.
+const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 /** Max characters of PDF text to send to the model (keeps us within context). */
 const MAX_TEXT_CHARS = 120_000;
@@ -34,6 +36,46 @@ export function getApiKey(): string {
 
 function getClient(): GoogleGenerativeAI {
   return new GoogleGenerativeAI(getApiKey());
+}
+
+/** How many extra attempts to make when the model is temporarily overloaded. */
+const MAX_RETRIES = 3;
+
+function isTransient(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  // Do NOT retry hard daily-quota exhaustion: the quota won't reset for hours,
+  // so retrying only wastes time and (on metered plans) money.
+  if (/quota|per day|PerDay|billing/i.test(msg)) return false;
+  // Retry only genuinely transient conditions: 503 overload, 500 server error,
+  // and short-window 429 rate limits that are not daily-quota exhaustion.
+  return (
+    /\b(503|500)\b/.test(msg) ||
+    /overloaded|high demand|UNAVAILABLE/i.test(msg) ||
+    /\b429\b/.test(msg)
+  );
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Call a Gemini model with exponential backoff on transient errors (503/429).
+ * Gemini's flash models intermittently return "high demand" 503s; retrying a
+ * few times with backoff makes the user-facing flow far more reliable.
+ */
+async function generateWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === MAX_RETRIES || !isTransient(err)) break;
+      // 0.8s, 1.6s, 3.2s (+ jitter)
+      const delay = 800 * 2 ** attempt + Math.random() * 300;
+      await sleep(delay);
+    }
+  }
+  throw lastErr;
 }
 
 /** The structured-output schema mirrors BudgetData in budget-schema.ts. */
@@ -114,6 +156,21 @@ const budgetResponseSchema: ResponseSchema = {
   ],
 };
 
+/**
+ * Schema for the image/scanned-PDF path. Same as budgetResponseSchema plus a
+ * `transcription` field: since there's no extractable text layer to ground the
+ * chat on, we ask the model to also transcribe the document so /api/ask has
+ * raw context to work with.
+ */
+const budgetWithTranscriptionSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    ...(budgetResponseSchema.properties as Record<string, unknown>),
+    transcription: { type: SchemaType.STRING },
+  } as ResponseSchema["properties"],
+  required: budgetResponseSchema.required,
+};
+
 export function buildExtractionPrompt(text: string): string {
   const clipped =
     text.length > MAX_TEXT_CHARS ? text.slice(0, MAX_TEXT_CHARS) : text;
@@ -157,7 +214,9 @@ export async function structureBudget(text: string): Promise<unknown> {
 
   let raw: string;
   try {
-    const result = await model.generateContent(buildExtractionPrompt(text));
+    const result = await generateWithRetry(() =>
+      model.generateContent(buildExtractionPrompt(text)),
+    );
     raw = result.response.text();
   } catch (err) {
     throw new GeminiError(
@@ -172,6 +231,83 @@ export async function structureBudget(text: string): Promise<unknown> {
   } catch {
     throw new GeminiError("The model returned data that was not valid JSON.");
   }
+}
+
+export function buildPdfExtractionPrompt(): string {
+  return [
+    "You are a municipal-budget analyst. The attached PDF is a municipal",
+    "budget. Some or all of it may be scanned images rather than selectable",
+    "text, so read the document visually. Extract structured data and return",
+    "ONLY data supported by the document. Use dollar amounts as plain numbers",
+    "(no symbols, no commas).",
+    "",
+    "Guidance:",
+    "- title: the budget document's title.",
+    "- municipality: the city/town/county the budget is for.",
+    "- fiscalYear: the primary fiscal year (e.g. 'FY2027').",
+    "- totalBudget: the overall total budget/appropriation amount.",
+    "- departments: spending by department/function (e.g. Fire, Police, DPW).",
+    "- categories: spending by category/object (e.g. Personnel, Operating).",
+    "- revenue: revenue by source (e.g. Property Tax, State Aid).",
+    "- expenditures: major expenditure groupings.",
+    "- yearOverYear: only include if the document shows totals for multiple",
+    "  years; otherwise return an empty array.",
+    "- summary: 2-3 plain-language sentences a resident could understand.",
+    "- transcription: a plain-text transcription of the budget tables and key",
+    "  figures you read, so the data can be referenced later. Keep it factual.",
+    "If a section is not present, return an empty array for it. Do not invent",
+    "numbers.",
+  ].join("\n");
+}
+
+/**
+ * Structure a budget directly from PDF bytes using Gemini's multimodal input.
+ * Used as a fallback for scanned/image-only PDFs that have no extractable text
+ * layer. Gemini reads the pages visually (OCR + structuring in one call).
+ *
+ * Returns the parsed JSON (untyped) including a `transcription` string. The
+ * caller must strip `transcription` out, then normalize + Zod-validate the rest.
+ */
+export async function structureBudgetFromPdf(
+  base64Pdf: string,
+): Promise<{ data: unknown; transcription: string }> {
+  const model = getClient().getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: budgetWithTranscriptionSchema,
+    },
+  });
+
+  let raw: string;
+  try {
+    const result = await generateWithRetry(() =>
+      model.generateContent([
+        { inlineData: { data: base64Pdf, mimeType: "application/pdf" } },
+        { text: buildPdfExtractionPrompt() },
+      ]),
+    );
+    raw = result.response.text();
+  } catch (err) {
+    throw new GeminiError(
+      `The model failed to analyze the scanned PDF: ${
+        err instanceof Error ? err.message : "unknown error"
+      }`,
+    );
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    throw new GeminiError("The model returned data that was not valid JSON.");
+  }
+
+  const transcription =
+    typeof parsed.transcription === "string" ? parsed.transcription : "";
+  // Hand the caller the budget fields separately from the transcription.
+  const { transcription: _omit, ...data } = parsed;
+  return { data, transcription };
 }
 
 export function buildAnswerPrompt(
@@ -211,7 +347,9 @@ export async function answerQuestion(
   });
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(() =>
+      model.generateContent(prompt),
+    );
     return result.response.text().trim();
   } catch (err) {
     throw new GeminiError(

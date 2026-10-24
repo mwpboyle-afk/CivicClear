@@ -13,11 +13,9 @@ I can analyze a budget relevant to me.
 ### Acceptance criteria
 1. WHEN a user selects or drops a PDF file THEN the system SHALL accept it and
    begin analysis.
-2. WHEN a user clicks "Load Amherst FY27 sample" THEN the system SHALL analyze a
-   bundled sample budget without requiring a file upload.
-3. IF the uploaded file is not a PDF or has no extractable text THEN the system
+2. IF the uploaded file is not a PDF or has no extractable text THEN the system
    SHALL show a clear, friendly error instead of crashing.
-4. WHILE analysis is running THE system SHALL display a loading indicator.
+3. WHILE analysis is running THE system SHALL display a loading indicator.
 
 ## Requirement 2 — Structured extraction
 **User story:** As a resident, I want the budget turned into structured data, so
@@ -73,7 +71,7 @@ want an accessible, understandable interface.
 
 ## Non-functional / scope
 - Hackathon prototype: single session, no auth, no database.
-- Runtime LLM: Google Gemini (`gemini-3.5-flash`, override via `GEMINI_MODEL`),
-  `GEMINI_API_KEY` required.
+- Runtime LLM: Google Gemini (`gemini-3.5-flash-lite`, override via
+  `GEMINI_MODEL`), `GEMINI_API_KEY` required.
 - Deployed publicly on Vercel for judging.
 - `.kiro/` artifacts committed (not gitignored).

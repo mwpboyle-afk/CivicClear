@@ -13,7 +13,7 @@
   - _Requirements: 2.1, 2.2, 2.3_
 
 - [x] 3. PDF text extraction API
-  - `lib/pdf.ts` with `pdf-parse`; `POST /api/analyze` returns extracted text
+  - `lib/pdf.ts` with `pdfjs-dist`; `POST /api/analyze` returns extracted text
   - Graceful errors for non-PDF / empty text; Node runtime
   - Unit tests on the extraction helper
   - _Requirements: 1.1, 1.3, 2.1_
@@ -24,11 +24,10 @@
   - Unit tests with mocked Gemini client; prompt builder test
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [x] 5. Upload UI + sample-data button
-  - Drag-drop/file-picker, loading state, "Load Amherst FY27 sample"
-  - Bundle Amherst PDF in `public/samples/`; store result in session state
-  - Component tests for upload + sample flow
-  - _Requirements: 1.1, 1.2, 1.4_
+- [x] 5. Upload UI
+  - Drag-drop/file-picker with loading state; store result in session state
+  - Component tests for the upload flow
+  - _Requirements: 1.1, 1.3_
 
 - [x] 6. Visualization dashboard
   - KPI cards, category/department pie, revenue vs. expense, YoY (conditional)

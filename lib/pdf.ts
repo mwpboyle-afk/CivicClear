@@ -12,9 +12,22 @@ export class PdfExtractionError extends Error {
 }
 
 /**
+ * Thrown when a PDF is valid but has no extractable text layer — i.e. it is
+ * scanned/image-only. The caller can catch this specifically to fall back to
+ * the multimodal (image) analysis path.
+ */
+export class NoTextLayerError extends PdfExtractionError {
+  constructor(message: string) {
+    super(message);
+    this.name = "NoTextLayerError";
+  }
+}
+
+/**
  * Extract plain text from a PDF buffer.
- * @throws PdfExtractionError when the buffer is empty, not a PDF, or yields no
- * extractable text (e.g. a scanned/image-only PDF).
+ * @throws NoTextLayerError when the PDF is valid but has no extractable text
+ * (scanned/image-only) — the caller can fall back to the image path.
+ * @throws PdfExtractionError when the buffer is empty or not a PDF.
  */
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   if (!buffer || buffer.length === 0) {
@@ -63,9 +76,8 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
   }
 
   if (fullText.length === 0) {
-    throw new PdfExtractionError(
-      "No text could be extracted. This may be a scanned/image-only PDF, " +
-        "which is not supported.",
+    throw new NoTextLayerError(
+      "No extractable text layer (likely a scanned/image-only PDF).",
     );
   }
 

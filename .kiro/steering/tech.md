@@ -5,11 +5,15 @@
 - **Styling:** Tailwind CSS.
 - **Charts:** Recharts.
 - **Validation:** Zod (validate all LLM output before it reaches the UI).
-- **PDF parsing:** `pdf-parse` in a Node runtime API route. Fallback to
-  `pdfjs-dist` if the serverless runtime has issues.
+- **PDF parsing:** `pdfjs-dist` (legacy build) in a Node runtime API route.
+  We started on `pdf-parse` but its bundled pdf.js rejected modern PDFs, so we
+  switched to `pdfjs-dist`. When a PDF has no text layer (scanned/image-only),
+  the analyze route falls back to sending the PDF bytes to Gemini's multimodal
+  input, which reads the pages visually and returns a transcription for Q&A.
 - **LLM:** Google Gemini via `@google/generative-ai`, model
-  `gemini-3.5-flash` (override with the `GEMINI_MODEL` env var). Older 1.5/2.x
-  flash models were retired/blocked for new keys.
+  `gemini-3.5-flash-lite` (override with the `GEMINI_MODEL` env var). Older
+  1.5/2.x flash models were retired/blocked for new keys; the lite model has its
+  own separate free-tier daily quota.
 - **Testing:** Vitest + @testing-library/react (jsdom environment).
 - **Deploy:** Vercel.
 
@@ -19,7 +23,7 @@
 
 ## Architecture
 - Single Next.js app. No separate backend, no database.
-- `POST /api/analyze`: PDF buffer → `pdf-parse` (text) → Gemini (structured
+- `POST /api/analyze`: PDF buffer → `pdfjs-dist` (text) → Gemini (structured
   `BudgetData` JSON) → Zod-validated response.
 - `POST /api/ask`: question + budget context (structured JSON + extracted text)
   → Gemini grounded answer.

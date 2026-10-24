@@ -6,7 +6,7 @@ residents. Local governments publish their budgets as long, dense PDFs that few
 people can realistically read. CivicLens turns one of those PDFs into something
 a resident can actually use:
 
-1. **Upload** a municipal budget PDF (or load the bundled Amherst FY27 sample).
+1. **Upload** a municipal budget PDF (or try a bundled sample, picked at random).
 2. **Explore** the budget through clear visualizations — KPI cards, a
    spending-by-category pie chart, revenue vs. expenditure, and a
    year-over-year comparison when the document contains multi-year data.
@@ -28,8 +28,9 @@ a resident can actually use:
 ## Product principles
 - **Grounded, not generative guessing.** Q&A answers must come from the
   document. If the budget does not contain the answer, say so.
-- **Instant demo.** A judge should be able to click one button ("Load Amherst
-  sample") and immediately see a populated dashboard.
+- **Instant demo.** A judge can click "Try a sample budget" to analyze a random
+  bundled budget and land on a populated dashboard in seconds — showing the app
+  generalizes across municipalities, not just one hardcoded document.
 - **Accessible and plain-language.** Avoid jargon. Charts need labels, alt
   text, and sufficient color contrast.
 - **Scope discipline.** This is a hackathon prototype. Favor a working,
