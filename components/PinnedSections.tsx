@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -35,6 +36,8 @@ export default function PinnedSections({
   sections: PinnedSection[];
   onChange: (next: PinnedSection[]) => void;
 }) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -42,7 +45,12 @@ export default function PinnedSections({
     }),
   );
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = sections.findIndex((s) => s.id === active.id);
@@ -87,7 +95,9 @@ export default function PinnedSections({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveId(null)}
         >
           <SortableContext
             items={sections.map((s) => s.id)}
@@ -100,6 +110,7 @@ export default function PinnedSections({
                   section={s}
                   onUpdate={updateSection}
                   onRemove={removeSection}
+                  collapsed={activeId !== null && activeId !== s.id}
                 />
               ))}
             </div>
@@ -114,17 +125,22 @@ function SortableCard({
   section,
   onUpdate,
   onRemove,
+  collapsed,
 }: {
   section: PinnedSection;
   onUpdate: (id: string, patch: Partial<PinnedSection>) => void;
   onRemove: (id: string) => void;
+  /** True when another card is being dragged — show just this card's header. */
+  collapsed: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: section.id });
   const [editing, setEditing] = useState(section.answer === "");
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    // Translate only (not Transform): CSS.Transform injects scaleX/scaleY when
+    // sortable items differ in height, which visibly stretches the dragged card.
+    transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
@@ -184,7 +200,8 @@ function SortableCard({
         </div>
       </div>
 
-      {editing ? (
+      {/* While another card is being dragged, collapse to just the header. */}
+      {collapsed ? null : editing ? (
         <textarea
           value={section.answer}
           onChange={(e) => onUpdate(section.id, { answer: e.target.value })}
