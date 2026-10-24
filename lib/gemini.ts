@@ -243,6 +243,9 @@ export async function structureBudget(text: string): Promise<unknown> {
   const model: GenerativeModel = getClient().getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
+      // Extraction is a data task, not a creative one: temperature 0 makes the
+      // model pick its most-likely reading, maximizing run-to-run consistency.
+      temperature: 0,
       responseMimeType: "application/json",
       responseSchema: budgetResponseSchema,
     },
@@ -317,6 +320,8 @@ export async function structureBudgetFromPdf(
   const model = getClient().getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
+      // Deterministic extraction (see structureBudget).
+      temperature: 0,
       responseMimeType: "application/json",
       responseSchema: budgetWithTranscriptionSchema,
     },
