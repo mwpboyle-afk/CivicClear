@@ -210,7 +210,26 @@ describe("normalizeBudget — tax impact", () => {
     expect(r.taxImpact.averageHomeImpact).toBeUndefined();
   });
 
-  it("omits taxImpact entirely when no figures are present", () => {
+  it("keeps tax highlights and drops empty ones", () => {
+    const r = normalizeBudget({
+      taxImpact: {
+        highlights: ["Levy rises 2.5% annually", "  ", "", "New growth $275k"],
+      },
+    }) as any;
+    expect(r.taxImpact.highlights).toEqual([
+      "Levy rises 2.5% annually",
+      "New growth $275k",
+    ]);
+  });
+
+  it("keeps taxImpact when only highlights are present", () => {
+    const r = normalizeBudget({
+      taxImpact: { highlights: ["Property taxes fund most of the budget"] },
+    }) as any;
+    expect(r.taxImpact.highlights).toHaveLength(1);
+  });
+
+  it("omits taxImpact entirely when no figures or highlights are present", () => {
     const r = normalizeBudget({ taxImpact: { note: "" } }) as any;
     expect(r.taxImpact).toBeUndefined();
   });

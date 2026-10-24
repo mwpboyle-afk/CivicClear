@@ -37,18 +37,34 @@ describe("ExtendedSummary", () => {
 });
 
 describe("TaxImpact", () => {
-  it("renders the tax figures when present", () => {
+  it("renders the tax figures and highlights when present", () => {
     render(<TaxImpact budget={richBudget} />);
     expect(screen.getByText(/Tax rate \(per \$1,000\)/i)).toBeInTheDocument();
     expect(screen.getByText("$18.50")).toBeInTheDocument();
     expect(screen.getByText("+3.2%")).toBeInTheDocument();
     expect(screen.getByText(/median-valued home/i)).toBeInTheDocument();
+    // Free-form highlights also render.
+    expect(screen.getByText(/rises 2.5% annually/i)).toBeInTheDocument();
   });
 
-  it("shows an empty state when no tax figures exist", () => {
+  it("renders when only highlights exist (no structured figures)", () => {
+    render(
+      <TaxImpact
+        budget={{
+          ...sampleBudget,
+          taxImpact: { highlights: ["Property taxes fund 70% of the budget."] },
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(/Property taxes fund 70% of the budget/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an empty state when no tax information exists", () => {
     render(<TaxImpact budget={sampleBudget} />);
     expect(
-      screen.getByText(/No tax-impact figures were found/i),
+      screen.getByText(/No tax information was found/i),
     ).toBeInTheDocument();
   });
 });

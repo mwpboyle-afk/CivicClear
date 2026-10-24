@@ -52,9 +52,19 @@ export default function CategoryPie({ budget }: { budget: BudgetData }) {
     });
   }
 
+  const total = data.reduce((sum, d) => sum + d.amount, 0);
+
+  // Only label a slice with its percentage when it's big enough to fit the
+  // text — this avoids the overlapping-label clutter on small slices. Names
+  // live in the legend and the hover tooltip instead.
+  const renderPercent = (entry: { percent?: number }) => {
+    const pct = entry.percent ?? 0;
+    return pct >= 0.05 ? `${Math.round(pct * 100)}%` : "";
+  };
+
   return (
     <ChartCard title={`Spending by ${label}`}>
-      <ResponsiveContainer width="100%" height={320}>
+      <ResponsiveContainer width="100%" height={340}>
         <PieChart>
           <Pie
             data={data}
@@ -62,17 +72,26 @@ export default function CategoryPie({ budget }: { budget: BudgetData }) {
             nameKey="name"
             cx="50%"
             cy="50%"
-            outerRadius={110}
-            label={(entry) => entry.name}
+            outerRadius={100}
+            labelLine={false}
+            label={renderPercent}
           >
             {data.map((_, i) => (
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number) => formatCurrencyExact(value)}
+            formatter={(value: number) => {
+              const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
+              return [`${formatCurrencyExact(value)} (${pct}%)`, ""];
+            }}
           />
-          <Legend />
+          <Legend
+            layout="horizontal"
+            verticalAlign="bottom"
+            align="center"
+            wrapperStyle={{ fontSize: 12 }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>

@@ -38,27 +38,50 @@ export default function TaxImpact({ budget }: { budget: BudgetData }) {
       });
   }
 
+  const highlights = t?.highlights ?? [];
+  const hasContent = figures.length > 0 || highlights.length > 0;
+
   return (
     <ChartCard title="Tax Impact">
-      {figures.length === 0 ? (
+      {!hasContent ? (
         <p className="py-8 text-center text-sm text-slate-400">
-          No tax-impact figures were found in this document.
+          No tax information was found in this document.
         </p>
       ) : (
         <>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {figures.map((f) => (
-              <div
-                key={f.label}
-                className="rounded-lg border border-slate-100 bg-slate-50 p-4"
-              >
-                <dt className="text-xs font-medium text-slate-500">{f.label}</dt>
-                <dd className="mt-1 text-xl font-bold text-brand-dark">
-                  {f.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          {figures.length > 0 && (
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {figures.map((f) => (
+                <div
+                  key={f.label}
+                  className="rounded-lg border border-slate-100 bg-slate-50 p-4"
+                >
+                  <dt className="text-xs font-medium text-slate-500">
+                    {f.label}
+                  </dt>
+                  <dd className="mt-1 text-xl font-bold text-brand-dark">
+                    {f.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {highlights.length > 0 && (
+            <ul
+              className={`space-y-2 ${figures.length > 0 ? "mt-4" : ""} text-sm text-slate-700`}
+            >
+              {highlights.map((h, i) => (
+                <li key={i} className="flex gap-2">
+                  <span aria-hidden="true" className="text-brand">
+                    •
+                  </span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {t?.note && <p className="mt-3 text-sm text-slate-600">{t.note}</p>}
         </>
       )}

@@ -46,6 +46,10 @@ export const richBudget: BudgetData = {
     totalLevy: 70_000_000,
     percentChange: 3.2,
     averageHomeImpact: 240,
+    highlights: [
+      "Property tax levy rises 2.5% annually under Prop 2½.",
+      "New growth adds $275,000 to the levy.",
+    ],
     note: "Estimated for a median-valued home.",
   },
   plannedProjects: [

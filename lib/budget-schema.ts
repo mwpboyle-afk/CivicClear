@@ -31,6 +31,13 @@ export const taxImpactSchema = z.object({
   percentChange: z.number().finite().optional(),
   /** Estimated annual impact on an average/median home, if stated. */
   averageHomeImpact: z.number().finite().optional(),
+  /**
+   * Plain-language tax facts pulled from the document that don't fit the
+   * structured fields above (e.g. "Property tax levy rises 2.5% per year",
+   * "Property taxes fund $X of the budget"). This catches the tax content
+   * most budgets actually state, which is more varied than a few fixed numbers.
+   */
+  highlights: z.array(z.string()).optional(),
   /** Optional short note providing context for the figures above. */
   note: z.string().optional(),
 });
@@ -299,12 +306,12 @@ function normalizeExtendedSummary(
 /** Build the taxImpact object, keeping only fields the document provided. */
 function normalizeTaxImpact(
   rec: Record<string, unknown>,
-): { taxImpact?: Record<string, number | string> } {
+): { taxImpact?: Record<string, number | string | string[]> } {
   const raw = rec.taxImpact ?? rec.tax_impact;
   if (!raw || typeof raw !== "object") return {};
   const r = raw as Record<string, unknown>;
 
-  const out: Record<string, number | string> = {};
+  const out: Record<string, number | string | string[]> = {};
   const rate = parseAmount(r.taxRatePer1000 ?? r.taxRate ?? r.rate);
   const levy = parseAmount(r.totalLevy ?? r.levy);
   const pct = parseAmount(r.percentChange ?? r.percent_change);
@@ -313,6 +320,14 @@ function normalizeTaxImpact(
   if (levy !== null) out.totalLevy = levy;
   if (pct !== null) out.percentChange = pct;
   if (home !== null) out.averageHomeImpact = home;
+
+  const highlights = Array.isArray(r.highlights)
+    ? r.highlights
+        .map((h) => (typeof h === "string" ? h.trim() : ""))
+        .filter((h) => h.length > 0)
+    : [];
+  if (highlights.length > 0) out.highlights = highlights;
+
   if (typeof r.note === "string" && r.note.trim()) out.note = r.note.trim();
 
   return Object.keys(out).length > 0 ? { taxImpact: out } : {};
