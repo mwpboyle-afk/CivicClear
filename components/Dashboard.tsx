@@ -5,6 +5,9 @@ import KpiCards from "./KpiCards";
 import CategoryPie from "./CategoryPie";
 import RevenueVsExpense from "./RevenueVsExpense";
 import YearOverYear from "./YearOverYear";
+import ExtendedSummary from "./ExtendedSummary";
+import TaxImpact from "./TaxImpact";
+import PlannedProjects from "./PlannedProjects";
 import ChatPanel from "./ChatPanel";
 
 export default function Dashboard({
@@ -35,11 +38,9 @@ export default function Dashboard({
         </button>
       </header>
 
-      {budget.summary && (
-        <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-slate-700">
-          {budget.summary}
-        </div>
-      )}
+      <div className="mb-6">
+        <ExtendedSummary budget={budget} />
+      </div>
 
       <div className="mb-6">
         <KpiCards budget={budget} />
@@ -50,6 +51,8 @@ export default function Dashboard({
           <CategoryPie budget={budget} />
           <RevenueVsExpense budget={budget} />
           {hasYoy && <YearOverYear budget={budget} />}
+          <TaxImpact budget={budget} />
+          <PlannedProjects budget={budget} />
         </div>
 
         <div className="lg:col-span-1">

@@ -35,6 +35,30 @@ export const singleYearBudget: BudgetData = {
   yearOverYear: undefined,
 };
 
+/** A budget populated with the extended summary, tax impact, and projects. */
+export const richBudget: BudgetData = {
+  ...sampleBudget,
+  extendedSummary:
+    "The FY27 budget prioritizes education and public safety. Notable changes " +
+    "include a new capital program and modest growth in operating costs.",
+  taxImpact: {
+    taxRatePer1000: 18.5,
+    totalLevy: 70_000_000,
+    percentChange: 3.2,
+    averageHomeImpact: 240,
+    note: "Estimated for a median-valued home.",
+  },
+  plannedProjects: [
+    {
+      name: "New Fire Station",
+      amount: 2_500_000,
+      description: "Replace aging Station 2.",
+      timeframe: "FY27–FY29",
+    },
+    { name: "Road Repaving Program", amount: 1_200_000 },
+  ],
+};
+
 /**
  * A budget where categories outnumber departments (the inverse of the typical
  * case). Used to verify the KPI cards and the pie chart agree on which

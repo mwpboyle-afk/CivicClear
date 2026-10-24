@@ -21,6 +21,28 @@ export const yearTotalSchema = z.object({
   total: z.number().finite(),
 });
 
+/** Key tax-impact figures. All fields optional — documents vary widely. */
+export const taxImpactSchema = z.object({
+  /** Tax rate per $1,000 of assessed value, if stated. */
+  taxRatePer1000: z.number().finite().optional(),
+  /** Total tax levy, if stated. */
+  totalLevy: z.number().finite().optional(),
+  /** Percent change in the levy/rate vs. the prior year, if stated. */
+  percentChange: z.number().finite().optional(),
+  /** Estimated annual impact on an average/median home, if stated. */
+  averageHomeImpact: z.number().finite().optional(),
+  /** Optional short note providing context for the figures above. */
+  note: z.string().optional(),
+});
+
+/** A planned capital project or initiative in the budget. */
+export const plannedProjectSchema = z.object({
+  name: z.string().min(1),
+  amount: z.number().finite().optional(),
+  description: z.string().optional(),
+  timeframe: z.string().optional(),
+});
+
 export const budgetDataSchema = z.object({
   title: z.string(),
   municipality: z.string(),
@@ -32,11 +54,19 @@ export const budgetDataSchema = z.object({
   expenditures: z.array(lineItemSchema),
   yearOverYear: z.array(yearTotalSchema).optional(),
   summary: z.string(),
+  /** A longer, plain-language brief shown behind a "Read more" toggle. */
+  extendedSummary: z.string().optional(),
+  /** Key tax-impact figures, when the document reports them. */
+  taxImpact: taxImpactSchema.optional(),
+  /** Planned capital projects / initiatives, when present. */
+  plannedProjects: z.array(plannedProjectSchema).optional(),
 });
 
 export type LineItem = z.infer<typeof lineItemSchema>;
 export type RevenueItem = z.infer<typeof revenueItemSchema>;
 export type YearTotal = z.infer<typeof yearTotalSchema>;
+export type TaxImpact = z.infer<typeof taxImpactSchema>;
+export type PlannedProject = z.infer<typeof plannedProjectSchema>;
 export type BudgetData = z.infer<typeof budgetDataSchema>;
 
 /**
@@ -85,13 +115,22 @@ export function parseAmount(value: unknown): number | null {
   return Number.isFinite(result) ? result : null;
 }
 
-/** Normalize a raw line-item array: coerce amounts, drop empty/invalid rows. */
+/**
+ * Normalize a raw line-item array: coerce amounts, drop empty/invalid rows,
+ * and merge entries that share the same name (case-insensitive) by summing
+ * their amounts. Merging prevents duplicate/overlapping slices in the pie
+ * chart (e.g. the model emitting "Police" twice). The first-seen casing of a
+ * name is kept, and the original order is preserved.
+ */
 function normalizeLineItems(
   raw: unknown,
   nameKey: "name" | "source",
 ): Array<{ [k: string]: string | number }> {
   if (!Array.isArray(raw)) return [];
-  const out: Array<{ [k: string]: string | number }> = [];
+
+  const order: string[] = [];
+  const byKey = new Map<string, { name: string; amount: number }>();
+
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const rec = item as Record<string, unknown>;
@@ -105,9 +144,21 @@ function normalizeLineItems(
             : "";
     const amount = parseAmount(rec.amount);
     if (!name || amount === null) continue;
-    out.push({ [nameKey]: name, amount });
+
+    const key = name.toLowerCase();
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.amount += amount; // merge duplicates
+    } else {
+      byKey.set(key, { name, amount });
+      order.push(key);
+    }
   }
-  return out;
+
+  return order.map((key) => {
+    const { name, amount } = byKey.get(key)!;
+    return { [nameKey]: name, amount };
+  });
 }
 
 /**
@@ -161,7 +212,73 @@ export function normalizeBudget(raw: unknown): unknown {
     expenditures: normalizeLineItems(rec.expenditures, "name"),
     ...(yearOverYear ? { yearOverYear } : {}),
     summary: typeof rec.summary === "string" ? rec.summary : "",
+    ...normalizeExtendedSummary(rec),
+    ...normalizeTaxImpact(rec),
+    ...normalizePlannedProjects(rec),
   };
+}
+
+function normalizeExtendedSummary(
+  rec: Record<string, unknown>,
+): { extendedSummary?: string } {
+  const v = rec.extendedSummary ?? rec.extended_summary;
+  return typeof v === "string" && v.trim() ? { extendedSummary: v.trim() } : {};
+}
+
+/** Build the taxImpact object, keeping only fields the document provided. */
+function normalizeTaxImpact(
+  rec: Record<string, unknown>,
+): { taxImpact?: Record<string, number | string> } {
+  const raw = rec.taxImpact ?? rec.tax_impact;
+  if (!raw || typeof raw !== "object") return {};
+  const r = raw as Record<string, unknown>;
+
+  const out: Record<string, number | string> = {};
+  const rate = parseAmount(r.taxRatePer1000 ?? r.taxRate ?? r.rate);
+  const levy = parseAmount(r.totalLevy ?? r.levy);
+  const pct = parseAmount(r.percentChange ?? r.percent_change);
+  const home = parseAmount(r.averageHomeImpact ?? r.averageHome ?? r.homeImpact);
+  if (rate !== null) out.taxRatePer1000 = rate;
+  if (levy !== null) out.totalLevy = levy;
+  if (pct !== null) out.percentChange = pct;
+  if (home !== null) out.averageHomeImpact = home;
+  if (typeof r.note === "string" && r.note.trim()) out.note = r.note.trim();
+
+  return Object.keys(out).length > 0 ? { taxImpact: out } : {};
+}
+
+/** Build the plannedProjects array, dropping entries without a name. */
+function normalizePlannedProjects(
+  rec: Record<string, unknown>,
+): { plannedProjects?: Array<Record<string, string | number>> } {
+  const raw = rec.plannedProjects ?? rec.planned_projects ?? rec.projects;
+  if (!Array.isArray(raw)) return {};
+
+  const projects = raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+      const name =
+        typeof r.name === "string"
+          ? r.name.trim()
+          : typeof r.title === "string"
+            ? r.title.trim()
+            : "";
+      if (!name) return null;
+      const project: Record<string, string | number> = { name };
+      const amount = parseAmount(r.amount ?? r.cost);
+      // Treat 0 as "no amount given" so we don't render a misleading "$0".
+      if (amount !== null && amount !== 0) project.amount = amount;
+      if (typeof r.description === "string" && r.description.trim())
+        project.description = r.description.trim();
+      const timeframe = r.timeframe ?? r.status ?? r.timeline;
+      if (typeof timeframe === "string" && timeframe.trim())
+        project.timeframe = timeframe.trim();
+      return project;
+    })
+    .filter((p): p is Record<string, string | number> => p !== null);
+
+  return projects.length > 0 ? { plannedProjects: projects } : {};
 }
 
 /** Convenience: normalize then validate. Throws if the result is invalid. */

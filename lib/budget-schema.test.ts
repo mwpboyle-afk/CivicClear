@@ -151,3 +151,131 @@ describe("budgetDataSchema", () => {
     expect(() => budgetDataSchema.parse(bad)).toThrow();
   });
 });
+
+describe("normalizeBudget — dedup line items", () => {
+  it("merges departments with the same name (case-insensitive)", () => {
+    const result = normalizeBudget({
+      departments: [
+        { name: "Police", amount: 1000 },
+        { name: "Fire", amount: 500 },
+        { name: "police", amount: 200 }, // merges into "Police"
+        { name: "POLICE", amount: 50 }, // merges too
+      ],
+    }) as any;
+    expect(result.departments).toHaveLength(2);
+    // First-seen casing is kept; amounts summed.
+    expect(result.departments[0]).toEqual({ name: "Police", amount: 1250 });
+    expect(result.departments[1]).toEqual({ name: "Fire", amount: 500 });
+  });
+
+  it("merges revenue sources with the same name", () => {
+    const result = normalizeBudget({
+      revenue: [
+        { source: "Property Tax", amount: 100 },
+        { source: "property tax", amount: 25 },
+      ],
+    }) as any;
+    expect(result.revenue).toHaveLength(1);
+    expect(result.revenue[0]).toEqual({ source: "Property Tax", amount: 125 });
+  });
+});
+
+describe("normalizeBudget — extended summary", () => {
+  it("includes a non-empty extended summary", () => {
+    const r = normalizeBudget({ extendedSummary: "  A longer brief.  " }) as any;
+    expect(r.extendedSummary).toBe("A longer brief.");
+  });
+  it("omits an empty extended summary", () => {
+    const r = normalizeBudget({ extendedSummary: "   " }) as any;
+    expect(r.extendedSummary).toBeUndefined();
+  });
+});
+
+describe("normalizeBudget — tax impact", () => {
+  it("keeps only figures present in the document", () => {
+    const r = normalizeBudget({
+      taxImpact: {
+        taxRatePer1000: "$18.50",
+        totalLevy: "$70,000,000",
+        percentChange: "3.2",
+        note: "Based on the proposed levy.",
+      },
+    }) as any;
+    expect(r.taxImpact).toEqual({
+      taxRatePer1000: 18.5,
+      totalLevy: 70_000_000,
+      percentChange: 3.2,
+      note: "Based on the proposed levy.",
+    });
+    expect(r.taxImpact.averageHomeImpact).toBeUndefined();
+  });
+
+  it("omits taxImpact entirely when no figures are present", () => {
+    const r = normalizeBudget({ taxImpact: { note: "" } }) as any;
+    expect(r.taxImpact).toBeUndefined();
+  });
+});
+
+describe("normalizeBudget — planned projects", () => {
+  it("normalizes projects and drops nameless entries", () => {
+    const r = normalizeBudget({
+      plannedProjects: [
+        {
+          name: "New Fire Station",
+          amount: "$2,500,000",
+          description: "Replace Station 2",
+          timeframe: "FY27-FY29",
+        },
+        { amount: 100 }, // dropped: no name
+        { title: "Road Repaving", cost: "1.2M" }, // alt keys
+      ],
+    }) as any;
+    expect(r.plannedProjects).toHaveLength(2);
+    expect(r.plannedProjects[0]).toEqual({
+      name: "New Fire Station",
+      amount: 2_500_000,
+      description: "Replace Station 2",
+      timeframe: "FY27-FY29",
+    });
+    expect(r.plannedProjects[1]).toEqual({
+      name: "Road Repaving",
+      amount: 1_200_000,
+    });
+  });
+
+  it("omits plannedProjects when none are valid", () => {
+    const r = normalizeBudget({ plannedProjects: [{ amount: 5 }] }) as any;
+    expect(r.plannedProjects).toBeUndefined();
+  });
+
+  it("treats a zero amount as no amount (avoids a misleading $0)", () => {
+    const r = normalizeBudget({
+      plannedProjects: [{ name: "New School", amount: 0 }],
+    }) as any;
+    expect(r.plannedProjects).toHaveLength(1);
+    expect(r.plannedProjects[0]).toEqual({ name: "New School" });
+    expect(r.plannedProjects[0].amount).toBeUndefined();
+  });
+});
+
+describe("parseBudget — new optional fields validate", () => {
+  it("accepts a budget with tax impact and projects", () => {
+    const budget = parseBudget({
+      title: "t",
+      municipality: "m",
+      fiscalYear: "FY",
+      totalBudget: 100,
+      departments: [],
+      categories: [],
+      revenue: [],
+      expenditures: [],
+      summary: "s",
+      extendedSummary: "longer",
+      taxImpact: { taxRatePer1000: 18.5 },
+      plannedProjects: [{ name: "Project A", amount: 1000 }],
+    });
+    expect(() => budgetDataSchema.parse(budget)).not.toThrow();
+    expect(budget.taxImpact?.taxRatePer1000).toBe(18.5);
+    expect(budget.plannedProjects?.[0].name).toBe("Project A");
+  });
+});
