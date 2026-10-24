@@ -243,9 +243,12 @@ export async function structureBudget(text: string): Promise<unknown> {
   const model: GenerativeModel = getClient().getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
-      // Extraction is a data task, not a creative one: temperature 0 makes the
-      // model pick its most-likely reading, maximizing run-to-run consistency.
+      // Extraction is a data task, not a creative one. temperature 0 + topK 1
+      // + topP 0 make the model pick its single most-likely reading at each
+      // step, for the most consistent run-to-run results the API allows.
       temperature: 0,
+      topK: 1,
+      topP: 0,
       responseMimeType: "application/json",
       responseSchema: budgetResponseSchema,
     },
@@ -322,6 +325,8 @@ export async function structureBudgetFromPdf(
     generationConfig: {
       // Deterministic extraction (see structureBudget).
       temperature: 0,
+      topK: 1,
+      topP: 0,
       responseMimeType: "application/json",
       responseSchema: budgetWithTranscriptionSchema,
     },
@@ -392,6 +397,13 @@ export async function answerQuestion(
   const model = getClient().getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction,
+    generationConfig: {
+      // CivicClear is a factual tool: answer the same way every time rather
+      // than rephrasing. Maximize determinism like the extraction calls.
+      temperature: 0,
+      topK: 1,
+      topP: 0,
+    },
   });
 
   try {
