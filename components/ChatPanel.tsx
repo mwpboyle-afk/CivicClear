@@ -46,6 +46,12 @@ export default function ChatPanel({
 
   const atLimit = askedCount >= MAX_QUESTIONS;
 
+  // Keep suggestions visible across questions; only drop ones already asked.
+  const askedQuestions = new Set(
+    messages.filter((m) => m.role === "user").map((m) => m.content),
+  );
+  const remainingSuggestions = SUGGESTIONS.filter((s) => !askedQuestions.has(s));
+
   useEffect(() => {
     // Guard scrollIntoView: not available in all environments (e.g. jsdom).
     endRef.current?.scrollIntoView?.({ behavior: "smooth" });
@@ -111,18 +117,9 @@ export default function ChatPanel({
         aria-live="polite"
       >
         {messages.length === 0 && !loading && (
-          <div className="space-y-2">
-            <p className="text-sm text-slate-500">Try asking:</p>
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                onClick={() => ask(s)}
-                className="block w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 hover:border-brand hover:bg-blue-50"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <p className="text-sm text-slate-400">
+            Ask a question below, or tap a suggestion to get started.
+          </p>
         )}
 
         {messages.map((m, i) => {
@@ -174,6 +171,24 @@ export default function ChatPanel({
         )}
         <div ref={endRef} />
       </div>
+
+      {!atLimit && remainingSuggestions.length > 0 && (
+        <div className="border-t border-slate-100 px-4 pt-3">
+          <p className="mb-2 text-xs font-medium text-slate-400">Try asking:</p>
+          <div className="flex flex-wrap gap-2">
+            {remainingSuggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => ask(s)}
+                disabled={loading || cooldown}
+                className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-brand hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={(e) => {
