@@ -13,8 +13,14 @@ import {
 // gemini-3.8-flash) when your key/quota allows.
 const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
-/** Max characters of PDF text to send to the model (keeps us within context). */
-const MAX_TEXT_CHARS = 120_000;
+/**
+ * Max characters of PDF text to send to the model. This is a self-imposed
+ * guard, not a Gemini limit: the flash models have ~1M-token context windows
+ * (~3-4M chars), so 600k leaves ample headroom while covering even large
+ * ~300-page budget PDFs in full. Raising it lets fields like tax impact and
+ * planned projects — which often appear deeper in the document — be found.
+ */
+const MAX_TEXT_CHARS = 600_000;
 
 export class GeminiError extends Error {
   constructor(message: string) {
