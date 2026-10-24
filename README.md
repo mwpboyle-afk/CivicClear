@@ -57,7 +57,11 @@ the committed [`.kiro/`](./.kiro) directory: steering docs, the feature spec
 
 - Reads both text-based and scanned/image PDFs (scanned documents take a little
   longer). All figures come from the uploaded document.
-- Hackathon prototype: single session, no accounts, no persistence.
+- For very large budgets (hundreds of pages), the dashboard focuses on the
+  summary and overview sections; the chat can answer questions about details
+  found deeper in the document. Small-to-mid-size budgets are analyzed in full.
+- Hackathon prototype: single session, no accounts, no persistence. Built as a
+  proof of concept, not a production tool.
 
 ## License
 
