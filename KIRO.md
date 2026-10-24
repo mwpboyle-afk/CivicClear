@@ -1,8 +1,8 @@
 # How we used Kiro to build CivicClear
 
 CivicClear was built in the **Kiro IDE** using a **spec-driven** workflow, backed
-by **steering docs** and **agent hooks**. Everything referenced here is
-committed under [`.kiro/`](./.kiro).
+by **steering docs** and **agent hooks**, then iterated on turn by turn with the
+agent. Everything referenced here is committed under [`.kiro/`](./.kiro).
 
 ## Which Kiro tools we used
 
@@ -75,8 +75,34 @@ loop during a time-boxed hackathon:
 automatically. We never advanced to the next task on top of failing tests or a
 broken build, which matters most when you're moving fast against a deadline.
 
+## Iterating with Kiro
+
+Past the initial spec, we kept using the Kiro agent to extend and harden the
+app turn by turn, each change kept green by the hooks:
+
+- **Grew the product** from a viewer into a report builder — pin chat answers as
+  sections, add custom notes/lists, drag-to-reorder and edit them, an editable
+  report title, save/reopen reports (localStorage), and print-to-PDF export that
+  excludes the chat.
+- **Diagnosed real production bugs with the agent.** A pdfjs worker wasn't traced
+  into the Vercel serverless bundle (worked locally, 404'd in prod); a Gemini
+  call 401'd because the API key had a stray trailing character. In both cases we
+  used the agent to reproduce, find the root cause, and fix — rather than guess.
+- **Tuned for a data tool.** We set the model to `temperature 0` (plus `topK 1`,
+  `topP 0`) so the same budget yields the same analysis run to run — important
+  for a factual civic tool — and verified the determinism live.
+
+## What we didn't use (and why)
+
+In the interest of an honest write-up: we did not use MCP, property-based
+testing, or Kiro powers on this project. Our testing is example-based (Vitest +
+Testing Library, ~100 tests). Given the fixed deadline we focused our Kiro usage
+on spec-driven development, steering, and hooks, which gave the most leverage
+for this app.
+
 ## Result
 
 Spec + steering + hooks let us go from an empty repo to a tested, building,
-end-to-end app — upload → extract → structure → visualize → ask — with the
-process itself (not just the output) captured in the committed `.kiro/` folder.
+deployed app — upload a budget → explore it visually → ask grounded questions →
+build and export a report — with the process itself (not just the output)
+captured in the committed `.kiro/` folder.
