@@ -30,27 +30,34 @@ describe("UploadPanel", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Bad PDF");
   });
 
-  it("hides the sample button when no samples are available", () => {
+  it("shows no sample chooser when no samples are available", () => {
     render(<UploadPanel onAnalyze={vi.fn()} loading={false} error={null} />);
-    expect(
-      screen.queryByRole("button", { name: /Try a sample budget/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/try a sample budget/i)).not.toBeInTheDocument();
   });
 
-  it("shows the sample button and triggers a random sample", () => {
-    const onTrySample = vi.fn();
+  it("lists each sample and analyzes the chosen one", () => {
+    const onAnalyzeSample = vi.fn();
+    const samples = [
+      { file: "hadley.pdf", label: "Town of Hadley, MA" },
+      { file: "winchester.pdf", label: "Town of Winchester, MA" },
+    ];
     render(
       <UploadPanel
         onAnalyze={vi.fn()}
-        onTrySample={onTrySample}
-        sampleCount={3}
+        samples={samples}
+        onAnalyzeSample={onAnalyzeSample}
         loading={false}
         error={null}
       />,
     );
-    const btn = screen.getByRole("button", { name: /Try a sample budget/i });
-    expect(btn).toHaveTextContent("3 available");
-    fireEvent.click(btn);
-    expect(onTrySample).toHaveBeenCalledOnce();
+    // Each sample shows as its own button.
+    expect(
+      screen.getByRole("button", { name: /Town of Hadley, MA/i }),
+    ).toBeInTheDocument();
+    const winchester = screen.getByRole("button", {
+      name: /Town of Winchester, MA/i,
+    });
+    fireEvent.click(winchester);
+    expect(onAnalyzeSample).toHaveBeenCalledWith(samples[1]);
   });
 });

@@ -14,9 +14,11 @@ type Message = {
 
 const SUGGESTIONS = [
   "What is the total budget?",
+  "What does the debt look like?",
+  "What projects are mentioned?",
+  "How are taxes affected?",
   "How much is allocated to public safety?",
   "What are the largest sources of revenue?",
-  "What changed the most compared to last year?",
 ];
 
 /** Rate limits to keep API usage in check (no backend/persistence needed). */

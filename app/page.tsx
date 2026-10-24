@@ -4,8 +4,14 @@ import { useState, useEffect } from "react";
 import type { BudgetData } from "@/lib/budget-schema";
 import UploadPanel from "@/components/UploadPanel";
 import Dashboard from "@/components/Dashboard";
+import SavedReportsList from "@/components/SavedReportsList";
+import {
+  loadReports,
+  deleteReport,
+  type SavedReport,
+} from "@/lib/saved-reports";
 
-type Analysis = { budget: BudgetData; text: string };
+type Analysis = { budget: BudgetData; text: string; report?: SavedReport };
 type Sample = { file: string; label: string };
 
 export default function Home() {
@@ -13,8 +19,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [saved, setSaved] = useState<SavedReport[]>([]);
 
-  // Load the list of bundled sample budgets so we can offer a random one.
+  // Load bundled sample budgets.
   useEffect(() => {
     let cancelled = false;
     fetch("/samples/manifest.json")
@@ -39,6 +46,11 @@ export default function Home() {
     };
   }, []);
 
+  // Load saved reports from localStorage (client-only).
+  useEffect(() => {
+    setSaved(loadReports());
+  }, []);
+
   async function analyzeFile(file: File) {
     setError(null);
     setLoading(true);
@@ -56,9 +68,7 @@ export default function Home() {
     }
   }
 
-  async function analyzeRandomSample() {
-    if (samples.length === 0) return;
-    const pick = samples[Math.floor(Math.random() * samples.length)];
+  async function analyzeSample(sample: Sample) {
     setError(null);
     setLoading(true);
     try {
@@ -68,12 +78,12 @@ export default function Home() {
       const res = await fetch("/api/analyze-sample", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: pick.file }),
+        body: JSON.stringify({ file: sample.file }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(
-          data.error || `The sample "${pick.label}" could not be analyzed.`,
+          data.error || `The sample "${sample.label}" could not be analyzed.`,
         );
       }
       setAnalysis({ budget: data.budget, text: data.text });
@@ -84,26 +94,50 @@ export default function Home() {
     }
   }
 
+  function openSaved(report: SavedReport) {
+    setAnalysis({ budget: report.budget, text: report.text, report });
+  }
+
+  function removeSaved(id: string) {
+    setSaved(deleteReport(id));
+  }
+
+  function reset() {
+    setAnalysis(null);
+    setError(null);
+    setSaved(loadReports()); // refresh in case a report was just saved
+  }
+
   if (analysis) {
     return (
       <Dashboard
         budget={analysis.budget}
         text={analysis.text}
-        onReset={() => {
-          setAnalysis(null);
-          setError(null);
-        }}
+        initialReport={analysis.report}
+        onReset={reset}
       />
     );
   }
 
   return (
-    <UploadPanel
-      onAnalyze={analyzeFile}
-      onTrySample={samples.length > 0 ? analyzeRandomSample : undefined}
-      sampleCount={samples.length}
-      loading={loading}
-      error={error}
-    />
+    <div>
+      <UploadPanel
+        onAnalyze={analyzeFile}
+        samples={samples}
+        onAnalyzeSample={analyzeSample}
+        loading={loading}
+        error={error}
+        compact={saved.length > 0}
+      />
+      {saved.length > 0 && (
+        <div className="mx-auto max-w-2xl px-6 pb-16">
+          <SavedReportsList
+            reports={saved}
+            onOpen={openSaved}
+            onDelete={removeSaved}
+          />
+        </div>
+      )}
+    </div>
   );
 }

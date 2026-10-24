@@ -13,3 +13,30 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
 }
+
+/* Print / PDF export: hide the chat and app chrome, keep charts + report. */
+@media print {
+  /* Anything explicitly marked as screen-only is removed from the PDF. */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* White background and no shadows for clean printed cards. */
+  body {
+    background: #ffffff;
+  }
+
+  /* The chat lives in the right grid column; with it hidden, let the report
+     column span the full width of the page. */
+  .lg\:col-span-2 {
+    grid-column: span 3 / span 3 !important;
+  }
+
+  /* Avoid awkward page breaks inside a card/section where possible. */
+  section,
+  .shadow-sm {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+}

@@ -2,18 +2,23 @@
 
 import { useState, useRef } from "react";
 
+type Sample = { file: string; label: string };
+
 export default function UploadPanel({
   onAnalyze,
-  onTrySample,
-  sampleCount = 0,
+  samples = [],
+  onAnalyzeSample,
   loading,
   error,
+  compact = false,
 }: {
   onAnalyze: (file: File) => void;
-  onTrySample?: () => void;
-  sampleCount?: number;
+  samples?: Sample[];
+  onAnalyzeSample?: (sample: Sample) => void;
   loading: boolean;
   error: string | null;
+  /** When true, don't force full viewport height (makes room for content below). */
+  compact?: boolean;
 }) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,7 +29,11 @@ export default function UploadPanel({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-12">
+    <main
+      className={`mx-auto flex max-w-2xl flex-col items-center justify-center px-6 py-12 ${
+        compact ? "" : "min-h-screen"
+      }`}
+    >
       <div className="text-center">
         <h1 className="text-5xl font-bold tracking-tight text-brand-dark">
           CivicLens
@@ -67,25 +76,13 @@ export default function UploadPanel({
             <p className="text-slate-600">
               Drag and drop a budget PDF here, or
             </p>
-            <div className="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-4 flex justify-center">
               <button
                 onClick={() => inputRef.current?.click()}
                 className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark"
               >
                 Choose a PDF
               </button>
-              {onTrySample && (
-                <>
-                  <span className="text-xs text-slate-400">or</span>
-                  <button
-                    onClick={onTrySample}
-                    className="rounded-lg border border-brand px-5 py-2.5 text-sm font-medium text-brand hover:bg-blue-50"
-                  >
-                    Try a sample budget
-                    {sampleCount > 1 ? ` (${sampleCount} available)` : ""}
-                  </button>
-                </>
-              )}
             </div>
             <input
               ref={inputRef}
@@ -94,6 +91,25 @@ export default function UploadPanel({
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
+
+            {onAnalyzeSample && samples.length > 0 && (
+              <div className="mt-6 border-t border-slate-100 pt-5">
+                <p className="text-sm font-medium text-slate-500">
+                  Or try a sample budget:
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {samples.map((s) => (
+                    <button
+                      key={s.file}
+                      onClick={() => onAnalyzeSample(s)}
+                      className="rounded-lg border border-brand px-4 py-2.5 text-sm font-medium text-brand hover:bg-blue-50"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

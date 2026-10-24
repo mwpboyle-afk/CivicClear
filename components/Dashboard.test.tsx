@@ -31,6 +31,28 @@ describe("Dashboard", () => {
     ).toBeInTheDocument();
     // Chat panel is present.
     expect(screen.getByText(/Ask about this budget/i)).toBeInTheDocument();
+    // Report-builder controls.
+    expect(
+      screen.getByRole("button", { name: /Download PDF/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("lets the report title be edited", () => {
+    render(<Dashboard budget={sampleBudget} text="raw" onReset={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Edit report title/i }));
+    const input = screen.getByLabelText(/Report title/i);
+    fireEvent.change(input, { target: { value: "My Budget Report" } });
+    expect((input as HTMLInputElement).value).toBe("My Budget Report");
+  });
+
+  it("saves the report to localStorage", () => {
+    window.localStorage.clear();
+    render(<Dashboard budget={sampleBudget} text="raw" onReset={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Save report/i }));
+    expect(screen.getByText(/Saved to this browser/i)).toBeInTheDocument();
+    const stored = window.localStorage.getItem("civiclens.savedReports");
+    expect(stored).toBeTruthy();
+    expect(JSON.parse(stored!)).toHaveLength(1);
   });
 
   it("calls onReset when the reset button is clicked", () => {
